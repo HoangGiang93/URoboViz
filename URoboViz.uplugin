@@ -1,0 +1,23 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "URoboViz",
+  "Description": "",
+  "Category": "",
+  "CreatedBy": "Hoang Giang Nguyen",
+  "CreatedByURL": "https://github.com/HoangGiang93",
+  "DocsURL": "https://github.com/HoangGiang93/URoboViz",
+  "MarketplaceURL": "",
+  "SupportURL": "https://github.com/HoangGiang93/URoboViz",
+  "CanContainContent": true,
+  "IsBetaVersion": false,
+  "Installed": false,
+  "Modules": [
+	{
+	  "Name": "URoboViz",
+	  "Type": "Runtime",
+	  "LoadingPhase": "Default"
+	}
+  ]
+}

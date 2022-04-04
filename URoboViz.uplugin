@@ -24,6 +24,10 @@
     {
       "Name": "UROSBridge",
       "Enabled": true
+    },
+    {
+      "Name": "UUtils",
+      "Enabled": true
     }
   ]
 }

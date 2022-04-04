@@ -10,4 +10,8 @@ void UROSSubscriber::Init()
   {
     Handler->AddSubscriber(Subscriber);
   }
+  else
+  {
+    UE_LOG(LogROSSubscriber, Warning, TEXT("%s is not valid"), *GetName())
+  }
 }

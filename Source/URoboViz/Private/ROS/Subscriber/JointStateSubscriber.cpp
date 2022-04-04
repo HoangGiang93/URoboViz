@@ -22,6 +22,10 @@ void UJointStateSubscriber::CreateSubscriber()
     Subscriber = MakeShareable<FJointStateSubscriberCallback>(
         new FJointStateSubscriberCallback(CommonSubscriberParameters.Topic, CommonSubscriberParameters.MessageType, JointController));
   }
+  else
+  {
+    UE_LOG(LogJointStateSubscriber, Warning, TEXT("%s of %s not found"), *JointControllerName, *GetName())
+  }
 }
 
 FJointStateSubscriberCallback::FJointStateSubscriberCallback(
@@ -47,7 +51,7 @@ void FJointStateSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
     TSharedPtr<sensor_msgs::JointState> JointState = StaticCastSharedPtr<sensor_msgs::JointState>(Msg);
     for (int32 i = 0; i < JointState->Names.Num(); i++)
     {
-      JointController->SetDesiredJointPosition(JointState->GetName()[i], JointState->GetPosition()[i]);
+      JointController->SetDesiredJointPositionFromROS(JointState->GetName()[i], JointState->GetPosition()[i]);
     }
   }
 }

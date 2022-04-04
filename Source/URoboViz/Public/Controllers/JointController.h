@@ -5,14 +5,63 @@
 #include "RobotController.h"
 #include "JointController.generated.h"
 
-/**
- * 
- */
+UENUM()
+enum class EJointType : uint8
+{
+	Revolute,
+	Continuous,
+	Prismatic
+};
+
+USTRUCT(Blueprintable) 
+struct FJoint
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName BoneName;
+
+	UPROPERTY(VisibleAnywhere)
+	EJointType JointType = EJointType::Revolute;
+
+	UPROPERTY(VisibleAnywhere)
+	float JointPosition = 0.f;
+
+	FJoint()
+	{
+	}
+
+	FJoint(const FName &InBoneName, const EJointType &InJointType) : BoneName(InBoneName), JointType(InJointType)
+	{
+	}
+
+	void SetDesiredJointPositionFromROS(float DesiredJointPosition)
+	{
+		switch (JointType)
+		{
+		case EJointType::Revolute:
+			JointPosition = -FMath::RadiansToDegrees(DesiredJointPosition);
+			break;
+
+		case EJointType::Continuous:
+			JointPosition = -DesiredJointPosition;
+			break;
+
+		case EJointType::Prismatic:
+			JointPosition = -DesiredJointPosition;
+			break;
+		
+		default:
+			break;
+		}
+	}
+};
+
 UCLASS()
 class UROBOVIZ_API UJointController : public URobotController
 {
 	GENERATED_BODY()
-	
+
 public:
 	UJointController();
 
@@ -23,12 +72,9 @@ protected:
 	virtual void Init() override;
 
 public:
-	void SetDesiredJointPosition(FString JointName, float DesiredJointPosition);
+	void SetDesiredJointPositionFromROS(const FString &JointName, const float DesiredJointPosition);
 
 private:
 	UPROPERTY(EditAnywhere)
-	TMap<FString, float> DesiredJointPositions;
-
-	UPROPERTY(VisibleAnywhere)
-	TMap<FString, FName> JointNameMap;
+	TMap<FString, FJoint> DesiredJointPositions;
 };

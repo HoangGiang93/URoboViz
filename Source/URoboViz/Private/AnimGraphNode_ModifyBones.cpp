@@ -33,15 +33,15 @@ void FAnimNode_ModifyBones::EvaluateSkeletalControl_AnyThread(FComponentSpacePos
 		// Convert to Bone Space.
 		FAnimationRuntime::ConvertCSTransformToBoneSpace(ComponentTransform, Output.Pose, NewBoneTransform, CompactPoseBoneToModifyIndex, EBoneControlSpace::BCS_BoneSpace);
 		
-		if (BoneToModify.BoneName.ToString().Contains(TEXT("continuous"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
-			BoneToModify.BoneName.ToString().Contains(TEXT("revolute"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+		if (BoneToModify.BoneName.ToString().Contains(TEXT("_continuous_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
+			BoneToModify.BoneName.ToString().Contains(TEXT("_revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
 		{
-			FQuat Rotation(FRotator(0.f, JointPositions[BoneToModify.BoneName], 0.f));
+			FQuat Rotation(FRotator(JointPositions[BoneToModify.BoneName], 0.f, 0.f));
 			NewBoneTransform.SetRotation(Rotation);
 		}
-		else if (BoneToModify.BoneName.ToString().Contains(TEXT("prismatic"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+		else if (BoneToModify.BoneName.ToString().Contains(TEXT("_prismatic_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
 		{
-			FVector Translation(0.f, 0.f, JointPositions[BoneToModify.BoneName]);
+			FVector Translation(0.f, JointPositions[BoneToModify.BoneName], 0.f);
 			NewBoneTransform.SetTranslation(Translation);
 		}
 
@@ -70,9 +70,9 @@ void FAnimNode_ModifyBones::InitializeBoneReferences(const FBoneContainer& Requi
 	for (int32 BoneIndex = 0; BoneIndex < RequiredBones.GetNumBones(); ++BoneIndex)
 	{
 		FName BoneName = RequiredBones.GetReferenceSkeleton().GetBoneName(BoneIndex);
-		if (BoneName.ToString().Contains(TEXT("continuous_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
-		BoneName.ToString().Contains(TEXT("prismatic_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
-		BoneName.ToString().Contains(TEXT("revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+		if (BoneName.ToString().Contains(TEXT("_continuous_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
+		BoneName.ToString().Contains(TEXT("_prismatic_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
+		BoneName.ToString().Contains(TEXT("_revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
 		{
 			FBoneReference BoneToModify(BoneName);
 			if (!BonesToModify.Contains(BoneToModify))
@@ -100,7 +100,6 @@ void UAnimGraphNode_ModifyBones::CopyNodeDataToPreviewNode(FAnimNode_Base* InPre
 {
 	FAnimNode_ModifyBones* ModifyBones = static_cast<FAnimNode_ModifyBones*>(InPreviewNode);
 
-	// copies Pin values from the internal node to get data which are not compiled yet
 	ModifyBones->JointPositions = Node.JointPositions;
 }
 

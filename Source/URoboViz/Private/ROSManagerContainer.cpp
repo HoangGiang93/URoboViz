@@ -5,33 +5,36 @@
 
 void FROSManagerContainer::Init()
 {
-	Handler = MakeShareable<FROSBridgeHandler>(new FROSBridgeHandler(Host, Port));
-
-	Handler->Connect();
-
 	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
 		if (ROSSubscriber == nullptr)
 		{
 			continue;
 		}
-		ROSSubscriber->Connect(Handler);
-		ROSSubscriber->Init();
+		ROSSubscriber->Connect(Host, Port);
 	}
 }
 
 void FROSManagerContainer::Deinit()
 {
-	if (Handler.IsValid())
+	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
-		Handler->Disconnect();
+		if (ROSSubscriber == nullptr)
+		{
+			continue;
+		}
+		ROSSubscriber->Disconnect();
 	}
 }
 
 void FROSManagerContainer::Tick()
 {
-	if (Handler.IsValid())
+	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
-		Handler->Process();
+		if (ROSSubscriber == nullptr)
+		{
+			continue;
+		}
+		ROSSubscriber->Tick();
 	}
 }

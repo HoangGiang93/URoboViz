@@ -20,17 +20,16 @@ void UJointController::Init()
 
   TArray<FName> BoneNames;
   GetOwner()->GetSkeletalMeshComponent()->GetBoneNames(BoneNames);
-  TArray<FString> BoneTails = {TEXT("_continuous_bone"), TEXT("_prismatic_bone"), TEXT("_revolute_bone")};
+  TMap<FString, EJointType> BoneTails = {{TEXT("_continuous_bone"), EJointType::Continuous}, {TEXT("_prismatic_bone"), EJointType::Prismatic}, {TEXT("_revolute_bone"), EJointType::Revolute}};
   for (const FName &BoneName : BoneNames)
   {
-    for (const FString &BoneTail : BoneTails)
+    for (const TPair<FString, EJointType> &BoneTail : BoneTails )
     {
-      if (BoneName.ToString().Contains(BoneTail, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+      if (BoneName.ToString().Contains(BoneTail.Key, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
       {
         FString JointName = BoneName.ToString();
-        JointName.RemoveFromEnd(BoneTail);
-        DesiredJointPositions.Add(JointName);
-        JointNameMap.Add(JointName, BoneName);
+        JointName.RemoveFromEnd(BoneTail.Key);
+        DesiredJointPositions.Add(JointName, FJoint(BoneName, BoneTail.Value));
       }
     }
   }
@@ -51,30 +50,19 @@ void UJointController::Tick()
     return;
   }
 
-  for (const TPair<FString, float> &DesiredJointPosition : DesiredJointPositions)
+  for (const TPair<FString, FJoint> &DesiredJointPosition : DesiredJointPositions)
   {
-    if (JointNameMap.Contains(DesiredJointPosition.Key))
+    if (RoboAnim->JointPositions.Contains(DesiredJointPosition.Value.BoneName))
     {
-      FName BoneName = JointNameMap[DesiredJointPosition.Key];
-      if (RoboAnim->JointPositions.Contains(BoneName))
-      {
-        if (BoneName.ToString().Contains(TEXT("_continuous_bone")) || BoneName.ToString().Contains(TEXT("_prismatic_bone")))
-        {
-          RoboAnim->JointPositions[BoneName] = 0.01 * DesiredJointPosition.Value;
-        }
-        else if (BoneName.ToString().Contains(TEXT("_revolute_bone")))
-        {
-          RoboAnim->JointPositions[BoneName] = -FMath::RadiansToDegrees(DesiredJointPosition.Value);
-        }
-      }
+      RoboAnim->JointPositions[DesiredJointPosition.Value.BoneName] = DesiredJointPosition.Value.JointPosition;
     }
   }
 }
 
-void UJointController::SetDesiredJointPosition(FString JointName, float DesiredJointPosition)
+void UJointController::SetDesiredJointPositionFromROS(const FString &JointName, const float DesiredJointPosition)
 {
   if (DesiredJointPositions.Contains(JointName))
   {
-    DesiredJointPositions[JointName] = DesiredJointPosition;
+    DesiredJointPositions[JointName].SetDesiredJointPositionFromROS(DesiredJointPosition);
   }
 }

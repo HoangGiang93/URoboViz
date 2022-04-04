@@ -14,8 +14,6 @@ struct FROSManagerContainer
 	GENERATED_BODY()
 
 public:
-	TSharedPtr<FROSBridgeHandler> Handler;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Host;
 

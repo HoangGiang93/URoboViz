@@ -5,14 +5,26 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogROSBase, Log, All);
 
-void UROSBase::Connect(const TSharedPtr<FROSBridgeHandler> &InHandler)
+void UROSBase::Connect(const FString &Host, const int32 Port)
 {
-  if (!InHandler.IsValid())
+  Handler = MakeShareable<FROSBridgeHandler>(new FROSBridgeHandler(Host, Port));
+
+  if (!Handler.IsValid())
   {
-    UE_LOG(LogROSBase, Error, TEXT("No FROSBridgeHandler created in %s"), *GetName())
     return;
   }
-  Handler = InHandler;
+  Handler->Connect();
+
+  Init();
+
+  if (ARoboManager *Outer = Cast<ARoboManager>(GetOuter()))
+  {
+    RoboManager = Outer;
+  }
+  else
+  {
+    UE_LOG(LogROSBase, Error, TEXT("Outer of %s is not ARoboManager"), *GetName())
+  }
 }
 
 void UROSBase::Init()
@@ -25,4 +37,20 @@ void UROSBase::Init()
   {
     UE_LOG(LogROSBase, Error, TEXT("Outer of %s is not ARoboManager"), *GetName())
   }
+}
+
+void UROSBase::Disconnect()
+{
+	if (Handler.IsValid())
+	{
+		Handler->Disconnect();
+	}
+}
+
+void UROSBase::Tick()
+{
+	if (Handler.IsValid())
+	{
+		Handler->Process();
+	}
 }

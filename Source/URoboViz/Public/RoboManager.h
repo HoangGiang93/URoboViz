@@ -5,7 +5,11 @@
 #include "GameFramework/Actor.h"
 #include "ROSManagerContainer.h"
 #include "RoboManagerContainer.h"
+// clang-format off
 #include "RoboManager.generated.h"
+// clang-format on
+
+class UObjectController;
 
 UCLASS()
 class UROBOVIZ_API ARoboManager : public AActor
@@ -28,15 +32,20 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	URobotController *GetController(FString ControllerName) const;
+	URobotController *GetController(const FString &ControllerName) const;
+
+	UObjectController *GetObjectController() const { return ObjectController; }
 
 private:
 	void Init();
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Robot Manager")
+	
+private:
+	UPROPERTY(EditAnywhere, Category = "Robot Manager")
 	TMap<ASkeletalMeshActor *, FRoboManagerContainer> RobotManager;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ROS Manager")
+	UPROPERTY(EditAnywhere, Category = "ROS Manager")
 	FROSManagerContainer ROSManager;
+
+	UPROPERTY(VisibleAnywhere, Category = "Object Controller")
+	UObjectController *ObjectController;
 };

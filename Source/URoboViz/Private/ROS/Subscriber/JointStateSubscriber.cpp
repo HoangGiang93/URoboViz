@@ -14,6 +14,7 @@ void UJointStateSubscriber::CreateSubscriber()
 {
   if (GetRoboManager() == nullptr)
   {
+    UE_LOG(LogJointStateSubscriber, Warning, TEXT("RoboManager of %s not found"), *GetName())
     return;
   }
 

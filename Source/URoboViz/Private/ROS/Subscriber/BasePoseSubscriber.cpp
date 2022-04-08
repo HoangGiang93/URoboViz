@@ -15,6 +15,7 @@ void UBasePoseSubscriber::CreateSubscriber()
 {
   if (GetRoboManager() == nullptr)
   {
+    UE_LOG(LogBasePoseSubscriber, Warning, TEXT("RoboManager of %s not found"), *GetName())
     return;
   }
 

@@ -7,6 +7,8 @@
 
 class FROSBridgeHandler;
 class UROSSubscriber;
+class UROSServiceServer;
+class UROSServiceClient;
 
 USTRUCT(Blueprintable)
 struct FROSManagerContainer
@@ -22,6 +24,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
 	TArray<UROSSubscriber *> ROSSubscribers;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+	TArray<UROSServiceServer *> ROSServiceServers;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+	TArray<UROSServiceClient *> ROSServiceClients;
 
 public:
 	FROSManagerContainer()

@@ -18,7 +18,7 @@ public:
 
   void Disconnect();
 
-  void Tick();
+  virtual void Tick();
 
 protected:
   virtual void Init();

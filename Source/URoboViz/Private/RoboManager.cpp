@@ -2,6 +2,9 @@
 
 #include "RoboManager.h"
 #include "Animation/SkeletalMeshActor.h"
+#include "Conversions.h"
+#include "ObjectController.h"
+#include "mujoco_msgs/ModelState.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogRoboManager, Log, All);
 
@@ -10,6 +13,8 @@ ARoboManager::ARoboManager()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	ObjectController = CreateDefaultSubobject<UObjectController>(TEXT("ObjectController"));
 }
 
 // Called when the game starts or when spawned
@@ -58,7 +63,7 @@ void ARoboManager::Init()
 	ROSManager.Init();
 }
 
-URobotController *ARoboManager::GetController(FString ControllerName) const
+URobotController *ARoboManager::GetController(const FString &ControllerName) const
 {
 	TArray<FRoboManagerContainer> RobotManagerContainers;
 	RobotManager.GenerateValueArray(RobotManagerContainers);

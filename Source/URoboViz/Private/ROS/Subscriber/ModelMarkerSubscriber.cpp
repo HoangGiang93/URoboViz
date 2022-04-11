@@ -1,3 +1,5 @@
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
+
 #include "ROS/Subscriber/ObjectMarkerSubscriber.h"
 #include "ObjectController.h"
 #include "visualization_msgs/Marker.h"

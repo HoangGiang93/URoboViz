@@ -1,9 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
 #include "RobotController.h"
+// clang-format off
 #include "JointController.generated.h"
+// clang-format on
 
 UENUM()
 enum class EJointType : uint8
@@ -13,7 +15,7 @@ enum class EJointType : uint8
 	Prismatic
 };
 
-USTRUCT(Blueprintable) 
+USTRUCT(Blueprintable)
 struct FJoint
 {
 	GENERATED_BODY()
@@ -50,7 +52,7 @@ struct FJoint
 		case EJointType::Prismatic:
 			JointPosition = -DesiredJointPosition;
 			break;
-		
+
 		default:
 			break;
 		}

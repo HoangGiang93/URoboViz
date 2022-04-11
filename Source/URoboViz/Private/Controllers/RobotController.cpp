@@ -1,5 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "Controllers/RobotController.h"
 #include "Animation/SkeletalMeshActor.h"
@@ -8,7 +7,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogRobotController, Log, All);
 
 URobotController::URobotController()
 {
-
 }
 
 void URobotController::Init(ASkeletalMeshActor *InOwner)
@@ -18,7 +16,7 @@ void URobotController::Init(ASkeletalMeshActor *InOwner)
     UE_LOG(LogRobotController, Error, TEXT("Owner of %s is nullptr"), *GetName())
     return;
   }
-  
+
   SetOwner(InOwner);
 
   Init();

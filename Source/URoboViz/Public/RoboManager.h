@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
@@ -38,7 +38,7 @@ public:
 
 private:
 	void Init();
-	
+
 private:
 	UPROPERTY(EditAnywhere, Category = "Robot Manager")
 	TMap<ASkeletalMeshActor *, FRoboManagerContainer> RobotManager;

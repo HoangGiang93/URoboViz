@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Service/Client/SpawnObjectClient.h"
 #include "Animation/SkeletalMeshActor.h"
@@ -58,8 +58,6 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
     {
       bShouldCallService = true;
 
-      GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);
-
       mujoco_msgs::ObjectStatus ObjectStatus;
       mujoco_msgs::ObjectInfo ObjectInfo;
       geometry_msgs::Pose Pose;
@@ -108,9 +106,7 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       Velocity.SetAngular(Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians() * FVector(-1, 1, -1));
       ObjectStatus.SetVelocity(Velocity);
 
-      UE_LOG(LogSpawnObjectClient, Warning, TEXT("qvel: %s - %s"),
-             *Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity().ToString(),
-             *Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians().ToString())
+      GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);
 
       ObjectStatusArray.Add(ObjectStatus);
     }

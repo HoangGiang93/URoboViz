@@ -1,9 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
 #include "CoreMinimal.h"
+// clang-format off
 #include "ROSManagerContainer.generated.h"
+// clang-format on
 
 class FROSBridgeHandler;
 class UROSPublisher;

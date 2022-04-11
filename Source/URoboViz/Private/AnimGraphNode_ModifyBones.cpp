@@ -1,5 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "AnimGraphNode_ModifyBones.h"
 #include "Animation/AnimInstanceProxy.h"
@@ -9,16 +8,15 @@
 
 FAnimNode_ModifyBones::FAnimNode_ModifyBones()
 {
-	
 }
 
-void FAnimNode_ModifyBones::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms)
+void FAnimNode_ModifyBones::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext &Output, TArray<FBoneTransform> &OutBoneTransforms)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(EvaluateSkeletalControl_AnyThread)
 	check(OutBoneTransforms.Num() == 0);
 
-	const FBoneContainer& BoneContainer = Output.Pose.GetPose().GetBoneContainer();
-	
+	const FBoneContainer &BoneContainer = Output.Pose.GetPose().GetBoneContainer();
+
 	FTransform ComponentTransform = Output.AnimInstanceProxy->GetComponentTransform();
 	for (const FBoneReference &BoneToModify : BonesToModify)
 	{
@@ -29,12 +27,12 @@ void FAnimNode_ModifyBones::EvaluateSkeletalControl_AnyThread(FComponentSpacePos
 
 		FCompactPoseBoneIndex CompactPoseBoneToModifyIndex = BoneToModify.GetCompactPoseIndex(BoneContainer);
 		FTransform NewBoneTransform = Output.Pose.GetComponentSpaceTransform(CompactPoseBoneToModifyIndex);
-		
+
 		// Convert to Bone Space.
 		FAnimationRuntime::ConvertCSTransformToBoneSpace(ComponentTransform, Output.Pose, NewBoneTransform, CompactPoseBoneToModifyIndex, EBoneControlSpace::BCS_BoneSpace);
-		
+
 		if (BoneToModify.BoneName.ToString().Contains(TEXT("_continuous_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
-			BoneToModify.BoneName.ToString().Contains(TEXT("_revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+				BoneToModify.BoneName.ToString().Contains(TEXT("_revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
 		{
 			FQuat Rotation(FRotator(JointPositions[BoneToModify.BoneName], 0.f, 0.f));
 			NewBoneTransform.SetRotation(Rotation);
@@ -48,7 +46,7 @@ void FAnimNode_ModifyBones::EvaluateSkeletalControl_AnyThread(FComponentSpacePos
 		// Convert back to Component Space.
 		FAnimationRuntime::ConvertBoneSpaceTransformToCS(ComponentTransform, Output.Pose, NewBoneTransform, CompactPoseBoneToModifyIndex, EBoneControlSpace::BCS_BoneSpace);
 
-		OutBoneTransforms.Add( FBoneTransform(BoneToModify.GetCompactPoseIndex(BoneContainer), NewBoneTransform) );
+		OutBoneTransforms.Add(FBoneTransform(BoneToModify.GetCompactPoseIndex(BoneContainer), NewBoneTransform));
 
 		TRACE_ANIM_NODE_VALUE(Output, TEXT("Target"), BoneToModify.BoneName);
 
@@ -56,23 +54,22 @@ void FAnimNode_ModifyBones::EvaluateSkeletalControl_AnyThread(FComponentSpacePos
 	}
 }
 
-bool FAnimNode_ModifyBones::IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) 
+bool FAnimNode_ModifyBones::IsValidToEvaluate(const USkeleton *Skeleton, const FBoneContainer &RequiredBones)
 {
-	return !BonesToModify.ContainsByPredicate([&](const FBoneReference& BoneToModify){
-				return !BoneToModify.IsValidToEvaluate(RequiredBones);
-			});
+	return !BonesToModify.ContainsByPredicate([&](const FBoneReference &BoneToModify)
+																						{ return !BoneToModify.IsValidToEvaluate(RequiredBones); });
 }
 
-void FAnimNode_ModifyBones::InitializeBoneReferences(const FBoneContainer& RequiredBones) 
+void FAnimNode_ModifyBones::InitializeBoneReferences(const FBoneContainer &RequiredBones)
 {
 	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(InitializeBoneReferences)
-	
+
 	for (int32 BoneIndex = 0; BoneIndex < RequiredBones.GetNumBones(); ++BoneIndex)
 	{
 		FName BoneName = RequiredBones.GetReferenceSkeleton().GetBoneName(BoneIndex);
 		if (BoneName.ToString().Contains(TEXT("_continuous_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
-		BoneName.ToString().Contains(TEXT("_prismatic_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
-		BoneName.ToString().Contains(TEXT("_revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+				BoneName.ToString().Contains(TEXT("_prismatic_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) ||
+				BoneName.ToString().Contains(TEXT("_revolute_bone"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
 		{
 			FBoneReference BoneToModify(BoneName);
 			if (!BonesToModify.Contains(BoneToModify))
@@ -84,9 +81,8 @@ void FAnimNode_ModifyBones::InitializeBoneReferences(const FBoneContainer& Requi
 	}
 }
 
-
-UAnimGraphNode_ModifyBones::UAnimGraphNode_ModifyBones(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UAnimGraphNode_ModifyBones::UAnimGraphNode_ModifyBones(const FObjectInitializer &ObjectInitializer)
+		: Super(ObjectInitializer)
 {
 }
 
@@ -96,9 +92,9 @@ FEditorModeID UAnimGraphNode_ModifyBones::GetEditorMode() const
 	return ModifyBones;
 }
 
-void UAnimGraphNode_ModifyBones::CopyNodeDataToPreviewNode(FAnimNode_Base* InPreviewNode)
+void UAnimGraphNode_ModifyBones::CopyNodeDataToPreviewNode(FAnimNode_Base *InPreviewNode)
 {
-	FAnimNode_ModifyBones* ModifyBones = static_cast<FAnimNode_ModifyBones*>(InPreviewNode);
+	FAnimNode_ModifyBones *ModifyBones = static_cast<FAnimNode_ModifyBones *>(InPreviewNode);
 
 	ModifyBones->JointPositions = Node.JointPositions;
 }

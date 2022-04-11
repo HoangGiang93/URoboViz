@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
@@ -29,8 +29,8 @@ public:
   void CallService(const TSet<class AStaticMeshActor *> &Objects);
 
 private:
-	UFUNCTION()
-	void OnEndOverlap(AActor* OverlappedActor, AActor* OtherActor);
+  UFUNCTION()
+  void OnEndOverlap(AActor *OverlappedActor, AActor *OtherActor);
 
 public:
   UPROPERTY(EditAnywhere)

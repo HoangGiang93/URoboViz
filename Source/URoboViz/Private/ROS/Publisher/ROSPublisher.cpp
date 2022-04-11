@@ -1,3 +1,5 @@
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
+
 #include "ROS/Publisher/ROSPublisher.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogROSPublisher, Log, All)

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ObjectController.h"
 #include "Async/Async.h"
@@ -65,13 +65,13 @@ AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName
 
 void UObjectController::AddObjectInMujoco(AStaticMeshActor *const Object)
 {
-	Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
+	Object->GetStaticMeshComponent()->SetEnableGravity(false);
 	ObjectsInMujoco.Add(Object);
 }
 
 void UObjectController::RemoveObjectInMujoco(AStaticMeshActor *const Object)
 {
-	Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
+	Object->GetStaticMeshComponent()->SetEnableGravity(true);
 	ObjectsInMujoco.Remove(Object);
 }
 
@@ -149,12 +149,6 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/Game/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
 										StaticMeshComponent->SetMaterial(0, Material);
 									}
-									UE_LOG(LogObjectController, Log, TEXT("Added %s - [%f, %f, %f, %f]"), 
-												*StaticMeshComponent->GetStaticMesh()->GetName(), 
-												ObjectStatus.GetInfo().GetColor().GetColor().X, 
-												ObjectStatus.GetInfo().GetColor().GetColor().Y, 
-												ObjectStatus.GetInfo().GetColor().GetColor().Z, 
-												ObjectStatus.GetInfo().GetColor().GetColor().W)
 								}
 							}
 							StaticMeshComponent->SetMobility(EComponentMobility::Movable);

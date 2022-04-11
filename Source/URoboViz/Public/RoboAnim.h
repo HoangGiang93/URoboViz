@@ -1,13 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
 #include "Animation/AnimInstance.h"
+// clang-format off
 #include "RoboAnim.generated.h"
+// clang-format on
 
-/**
- * 
- */
 UCLASS()
 class UROBOVIZ_API URoboAnim : public UAnimInstance
 {
@@ -18,7 +17,7 @@ public:
 
 public:
 	virtual void NativeBeginPlay() override;
-	
+
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 public:

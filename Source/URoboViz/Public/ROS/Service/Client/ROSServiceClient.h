@@ -1,9 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
-#include "ROSBridgeSrvClient.h"
 #include "ROS/ROSBase.h"
+#include "ROSBridgeSrvClient.h"
 // clang-format off
 #include "ROSServiceClient.generated.h"
 // clang-format on

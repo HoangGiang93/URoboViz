@@ -1,3 +1,5 @@
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
+
 #include "ROS/Publisher/TFPublisher.h"
 #include "Conversions.h"
 #include "Engine/StaticMeshActor.h"

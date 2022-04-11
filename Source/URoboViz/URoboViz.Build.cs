@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 using System.IO;
 using UnrealBuildTool;
@@ -22,7 +22,7 @@ public class URoboViz : ModuleRules
         "Json",
         "JsonUtilities",
         "UConversions",
-				"BlueprintGraph",
+        "BlueprintGraph",
         "AnimGraph",
         "AnimGraphRuntime"
       }

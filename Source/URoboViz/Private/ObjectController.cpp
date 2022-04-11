@@ -2,27 +2,27 @@
 
 #include "ObjectController.h"
 #include "Async/Async.h"
-#include "Async/AsyncWork.h"
 #include "Conversions.h"
 #include "Engine/StaticMeshActor.h"
-#include "mujoco_msgs/ModelState.h"
+#include "mujoco_msgs/ObjectState.h"
+#include "mujoco_msgs/ObjectStatus.h"
 #include "visualization_msgs/Marker.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogObjectController, Log, All);
 
-static FTransform GetTransform(const mujoco_msgs::ModelState &ModelState)
+static FTransform GetTransform(const mujoco_msgs::ObjectStatus &ObjectStatus)
 {
-	const FVector Location = ModelState.GetPose().GetPosition().GetVector();
-	const FRotator Rotation = ModelState.GetPose().GetOrientation().GetQuat().Rotator();
-	const FVector Scale = ModelState.GetScale();
+	const FVector Location = ObjectStatus.GetPose().GetPosition().GetVector();
+	const FRotator Rotation = ObjectStatus.GetPose().GetOrientation().GetQuat().Rotator();
+	const FVector Scale = ObjectStatus.GetInfo().GetSize();
 	return FTransform(Rotation, Location, Scale);
 }
 
-static FTransform GetTransform(const visualization_msgs::Marker &ModelMarker)
+static FTransform GetTransform(const visualization_msgs::Marker &ObjectMarker)
 {
-	const FVector Location = ModelMarker.GetPose().GetPosition().GetVector();
-	const FRotator Rotation = ModelMarker.GetPose().GetOrientation().GetQuat().Rotator();
-	const FVector Scale = ModelMarker.GetScale().GetVector();
+	const FVector Location = ObjectMarker.GetPose().GetPosition().GetVector();
+	const FRotator Rotation = ObjectMarker.GetPose().GetOrientation().GetQuat().Rotator();
+	const FVector Scale = ObjectMarker.GetScale().GetVector();
 	return FTransform(Rotation, Location, Scale);
 }
 
@@ -39,46 +39,72 @@ UObjectController::UObjectController()
 			{FVector4(0.8, 0.1, 0, 1), TEXT("Orange")}};
 }
 
-AStaticMeshActor *UObjectController::GetObject(const FString &ObjectName) const
+AStaticMeshActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
 {
-	AStaticMeshActor *const *ObjectPtr = Objects.FindByPredicate([&](AStaticMeshActor *Object)
-																															 { return Object->GetName().Compare(ObjectName) == 0; });
-	if (ObjectPtr != nullptr)
+	for (AStaticMeshActor *const &Object : ObjectsInMujoco)
 	{
-		return *ObjectPtr;
+		if (Object->GetName().Compare(ObjectName) == 0)
+		{
+			return Object;
+		}
+	}
+	return nullptr;
+}
+
+AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName) const
+{
+	for (AStaticMeshActor *const &Object : ObjectsInUnreal)
+	{
+		if (Object->GetName().Compare(ObjectName) == 0)
+		{
+			return Object;
+		}
+	}
+	return nullptr;
+}
+
+void UObjectController::AddObjectInMujoco(AStaticMeshActor *const Object)
+{
+	Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
+	ObjectsInMujoco.Add(Object);
+}
+
+void UObjectController::RemoveObjectInMujoco(AStaticMeshActor *const Object)
+{
+	Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
+	ObjectsInMujoco.Remove(Object);
+}
+
+void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus)
+{
+	if (Object != nullptr)
+	{
+		Object->SetActorTransform(FConversions::ROSToU(GetTransform(ObjectStatus)));
 	}
 	else
 	{
-		return nullptr;
+		UE_LOG(LogObjectController, Error, TEXT("Object is nullptr"))
 	}
 }
 
-void UObjectController::AddObject(AStaticMeshActor *const Object)
-{ 
-	if (Object != nullptr && Object->GetStaticMeshComponent() != nullptr)
+void UObjectController::MoveObjectByMarker(AStaticMeshActor *Object, const visualization_msgs::Marker &ObjectMarker)
+{
+	if (Object != nullptr)
 	{
-		Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
+		Object->SetActorTransform(FConversions::ROSToU(GetTransform(ObjectMarker)));
 	}
-	
-	Objects.Add(Object); 
+	else
+	{
+		UE_LOG(LogObjectController, Error, TEXT("Object is nullptr"))
+	}
 }
 
-void UObjectController::MoveObjectFromROS(AStaticMeshActor *Object, const mujoco_msgs::ModelState &ModelState)
+void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus)
 {
-	Object->SetActorTransform(FConversions::ROSToU(GetTransform(ModelState)));
-}
-
-void UObjectController::MoveObjectFromROS(AStaticMeshActor *Object, const visualization_msgs::Marker &ModelMarker)
-{
-	Object->SetActorTransform(FConversions::ROSToU(GetTransform(ModelMarker)));
-}
-
-void UObjectController::AddObjectFromROS(const mujoco_msgs::ModelState &ModelState)
-{
-	AsyncTask(ENamedThreads::GameThread, [ModelState, this]()
+	AsyncTask(ENamedThreads::GameThread, [ObjectStatus, this]()
 						{  
-							FString ObjectName = ModelState.GetName();
-							const FTransform Transform = GetTransform(ModelState);
+							FString ObjectName = ObjectStatus.GetInfo().GetName();
+							const FTransform Transform = GetTransform(ObjectStatus);
 
 							UE_LOG(LogObjectController, Log, TEXT("Try to add %s"), *ObjectName)
 							FActorSpawnParameters SpawnParameters;
@@ -88,66 +114,81 @@ void UObjectController::AddObjectFromROS(const mujoco_msgs::ModelState &ModelSta
 
 							StaticMeshComponent->UnregisterComponent();
 
-							FString MeshName;
-							switch (ModelState.GetType())
+							FString MeshPath;
+							switch (ObjectStatus.GetInfo().GetType())
 							{
-							case mujoco_msgs::ModelState::EType::CUBE:
-								MeshName = TEXT("SM_Cube");
+							case mujoco_msgs::ObjectInfo::CUBE:
+								MeshPath = TEXT("StaticMesh'/Game/Assets/StaticMeshes/SM_Cube.SM_Cube'");
 								break;
 
-							case mujoco_msgs::ModelState::EType::SPHERE:
-								MeshName = TEXT("SM_Sphere");
+							case mujoco_msgs::ObjectInfo::SPHERE:
+								MeshPath = TEXT("StaticMesh'/Game/Assets/StaticMeshes/SM_Sphere.SM_Sphere'");
 								break;
 
-							case mujoco_msgs::ModelState::EType::CYLINDER:
-								MeshName = TEXT("SM_Cylinder");
+							case mujoco_msgs::ObjectInfo::CYLINDER:
+								MeshPath = TEXT("StaticMesh'/Game/Assets/StaticMeshes/SM_Cylinder.SM_Cylinder'");
 								break;
 
-							case mujoco_msgs::ModelState::EType::MESH:
-								MeshName = TEXT("SM_") + ObjectName;
+							case mujoco_msgs::ObjectInfo::MESH:
+								MeshPath = TEXT("StaticMesh'/Game/") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
 								break;
 
 							default:
 								break;
 							}
 
-							UStaticMesh *StaticMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *(TEXT("StaticMesh'/Game/Assets/StaticMeshes/") + MeshName + TEXT(".") + MeshName + TEXT("'"))));
+							UStaticMesh *StaticMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *MeshPath));
 							if (StaticMesh != nullptr)
 							{
-								if (StaticMeshComponent->SetStaticMesh(StaticMesh))
+								StaticMeshComponent->SetStaticMesh(StaticMesh);
+								if (ObjectStatus.GetInfo().GetType() != mujoco_msgs::ObjectInfo::MESH)
 								{
-									if (ModelState.GetType() != mujoco_msgs::ModelState::EType::MESH)
+									if (ColorMap.Find(ObjectStatus.GetInfo().GetColor().GetColor()))
 									{
-										if (ColorMap.Find(ModelState.GetColor().GetColor()))
-										{
-											FString ColorName = TEXT("M_") + ColorMap[ModelState.GetColor().GetColor()];
-											UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/Game/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
-											StaticMeshComponent->SetMaterial(0, Material);
-										}
-										UE_LOG(LogObjectController, Log, TEXT("Added %s - [%f, %f, %f, %f]"), *StaticMeshComponent->GetStaticMesh()->GetName(), ModelState.GetColor().GetColor().X, ModelState.GetColor().GetColor().Y, ModelState.GetColor().GetColor().Z, ModelState.GetColor().GetColor().W)
+										FString ColorName = TEXT("M_") + ColorMap[ObjectStatus.GetInfo().GetColor().GetColor()];
+										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/Game/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
+										StaticMeshComponent->SetMaterial(0, Material);
 									}
-								}
-								else
-								{
-									UE_LOG(LogObjectController, Error, TEXT("Failed to add %s"), *ObjectName)
+									UE_LOG(LogObjectController, Log, TEXT("Added %s - [%f, %f, %f, %f]"), 
+												*StaticMeshComponent->GetStaticMesh()->GetName(), 
+												ObjectStatus.GetInfo().GetColor().GetColor().X, 
+												ObjectStatus.GetInfo().GetColor().GetColor().Y, 
+												ObjectStatus.GetInfo().GetColor().GetColor().Z, 
+												ObjectStatus.GetInfo().GetColor().GetColor().W)
 								}
 							}
 							StaticMeshComponent->SetMobility(EComponentMobility::Movable);
-							StaticMeshComponent->SetSimulatePhysics(false);
+							StaticMeshComponent->SetSimulatePhysics(true);
+							StaticMeshComponent->SetGenerateOverlapEvents(true);
 							StaticMeshComponent->RegisterComponent();
-							Objects.Add(Object); });
+
+							Object->Tags.Add(TEXT("tf")); 
+							
+							ObjectsInUnreal.Add(Object); });
 }
 
-bool UObjectController::AddOrMoveObjectFromROS(const mujoco_msgs::ModelState &ModelState)
+bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus)
 {
-	const FString ObjectName = ModelState.GetName();
-	AStaticMeshActor *Object = GetObject(ObjectName);
-	if (Object != nullptr)
+	if (GetObjectInUnreal(ObjectStatus.GetInfo().GetName()) == nullptr)
 	{
-		MoveObjectFromROS(Object, ModelState);
+		SpawnObjectInUnreal(ObjectStatus);
 		return true;
 	}
+	else if (AStaticMeshActor *Object = GetObjectInMujoco(ObjectStatus.GetInfo().GetName()))
+	{
+		MoveObjectByMujoco(Object, ObjectStatus);
+		return true;
+	}
+	return false;
+}
 
-	AddObjectFromROS(ModelState);
-	return true;
+void UObjectController::DestroyObjectInMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState)
+{
+	if (Object != nullptr && Object->GetStaticMeshComponent() != nullptr)
+	{
+		UStaticMeshComponent *StaticMeshComponent = Object->GetStaticMeshComponent();
+		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
+		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(ObjectState.GetVelocity().GetAngular().GetVector() * FVector(-1, 1, -1));
+	}
+	RemoveObjectInMujoco(Object);
 }

@@ -4,7 +4,7 @@
 #include "Animation/SkeletalMeshActor.h"
 #include "Conversions.h"
 #include "ObjectController.h"
-#include "mujoco_msgs/ModelState.h"
+#include "mujoco_msgs/ObjectState.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogRoboManager, Log, All);
 

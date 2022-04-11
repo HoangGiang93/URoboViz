@@ -6,6 +6,7 @@
 #include "ROSManagerContainer.generated.h"
 
 class FROSBridgeHandler;
+class UROSPublisher;
 class UROSSubscriber;
 class UROSServiceServer;
 class UROSServiceClient;
@@ -21,6 +22,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Port;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+	TArray<UROSPublisher *> ROSPublishers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
 	TArray<UROSSubscriber *> ROSSubscribers;

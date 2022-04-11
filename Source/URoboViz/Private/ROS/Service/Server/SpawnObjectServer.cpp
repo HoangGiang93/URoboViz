@@ -43,17 +43,17 @@ TSharedPtr<FROSBridgeSrv::SrvResponse> FSpawnObjectServerCallback::Callback(TSha
 {
   TSharedPtr<mujoco_srvs::SpawnObject::Request> Request =
       StaticCastSharedPtr<mujoco_srvs::SpawnObject::Request>(InRequest);
-
   if (ObjectController == nullptr)
   {
     return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(false));
   }
 
+  UE_LOG(LogSpawnObjectServer, Warning, TEXT("%s"), *Request->ToString())
   bool bSuccess = true;
-  TArray<mujoco_msgs::ModelState> ModelStates = Request->GetModelStates();
-  for (const mujoco_msgs::ModelState &ModelState : ModelStates)
-  {
-    bSuccess = bSuccess && ObjectController->AddOrMoveObjectFromROS(ModelState);
+  TArray<mujoco_msgs::ObjectStatus> Objects = Request->GetObjects();
+  for (const mujoco_msgs::ObjectStatus &Object : Objects)
+  {    
+    bSuccess = bSuccess && ObjectController->SpawnOrMoveObjectByMujoco(Object);
   }
 
   return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(bSuccess));

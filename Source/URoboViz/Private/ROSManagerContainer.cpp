@@ -1,12 +1,21 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ROSManagerContainer.h"
+#include "ROS/Publisher/ROSPublisher.h"
 #include "ROS/Service/Client/ROSServiceClient.h"
 #include "ROS/Service/Server/ROSServiceServer.h"
 #include "ROS/Subscriber/ROSSubscriber.h"
 
 void FROSManagerContainer::Init()
 {
+	for (UROSPublisher *ROSPublisher : ROSPublishers)
+	{
+		if (ROSPublisher == nullptr)
+		{
+			continue;
+		}
+		ROSPublisher->Connect(Host, Port);
+	}
 	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
 		if (ROSSubscriber == nullptr)
@@ -35,6 +44,14 @@ void FROSManagerContainer::Init()
 
 void FROSManagerContainer::Deinit()
 {
+	for (UROSPublisher *ROSPublisher : ROSPublishers)
+	{
+		if (ROSPublisher == nullptr)
+		{
+			continue;
+		}
+		ROSPublisher->Disconnect();
+	}
 	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
 		if (ROSSubscriber == nullptr)
@@ -63,6 +80,14 @@ void FROSManagerContainer::Deinit()
 
 void FROSManagerContainer::Tick()
 {
+	for (UROSPublisher *ROSPublisher : ROSPublishers)
+	{
+		if (ROSPublisher == nullptr)
+		{
+			continue;
+		}
+		ROSPublisher->Tick();
+	}
 	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
 		if (ROSSubscriber == nullptr)

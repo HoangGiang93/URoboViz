@@ -7,7 +7,8 @@
 
 namespace mujoco_msgs
 {
-	class ModelState;
+	class ObjectState;
+	class ObjectStatus;
 }
 
 namespace visualization_msgs
@@ -26,21 +27,30 @@ public:
 	UObjectController();
 
 public:
-	AStaticMeshActor *GetObject(const FString &ObjectName) const;
+	AStaticMeshActor *GetObjectInMujoco(const FString &ObjectName) const;
 
-	void AddObject(AStaticMeshActor *const Object);
+	AStaticMeshActor *GetObjectInUnreal(const FString &ObjectName) const;
 
-	void MoveObjectFromROS(AStaticMeshActor *Object, const mujoco_msgs::ModelState &ModelState);
+	void AddObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
 
-	void MoveObjectFromROS(AStaticMeshActor *Object, const visualization_msgs::Marker &ModelState);
+	void RemoveObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
 
-	void AddObjectFromROS(const mujoco_msgs::ModelState &ModelState);
+	void SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus);
 
-  bool AddOrMoveObjectFromROS(const mujoco_msgs::ModelState &ModelState);
+  bool SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus);
+
+	void MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus);
+
+	void MoveObjectByMarker(AStaticMeshActor *Object, const visualization_msgs::Marker &ObjectMarker);
+
+	void DestroyObjectInMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState);
 
 private:
 	UPROPERTY(VisibleAnywhere)
-	TArray<AStaticMeshActor *> Objects;
+	TSet<AStaticMeshActor *> ObjectsInMujoco;
+
+	UPROPERTY(VisibleAnywhere)
+	TSet<AStaticMeshActor *> ObjectsInUnreal;
 
 private:
 	TMap<FVector4, FString> ColorMap;

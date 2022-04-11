@@ -2,9 +2,9 @@
 
 #include "ROS/Service/Client/SpawnObjectClient.h"
 #include "Animation/SkeletalMeshActor.h"
-#include "Components/BoxComponent.h"
 #include "Conversions.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/TriggerBase.h"
 #include "ObjectController.h"
 #include "mujoco_srvs/SpawnObject.h"
 
@@ -13,23 +13,19 @@ DEFINE_LOG_CATEGORY_STATIC(LogSpawnObjectClient, Log, All)
 USpawnObjectClient::USpawnObjectClient()
 {
   CommonServiceClientParameters.ServiceName = TEXT("/spawn_objects");
-  CommonServiceClientParameters.ServiceType = TEXT("mujoco_msgs/SpawnObject");
+  CommonServiceClientParameters.ServiceType = TEXT("mujoco_srvs/SpawnObject");
 }
 
 void USpawnObjectClient::Init()
 {
   Super::Init();
-  for (ASkeletalMeshActor *Robot : Robots)
+  for (ATriggerBase *TriggerBase : TriggerBases)
   {
-    UBoxComponent *TriggerVolume = NewObject<UBoxComponent>(Robot, FName(Robot->GetName() + TEXT("_TriggerVolume")));
-    TriggerVolume->SetBoxExtent(TriggerVolumeSize);
-    TriggerVolume->SetGenerateOverlapEvents(true);
-    TriggerVolume->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-    TriggerVolume->AttachToComponent(Robot->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
-    TriggerVolume->AddLocalOffset(FVector(0.f, 0.f, TriggerVolumeSize.Z));
-    TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &USpawnObjectClient::OnBeginOverlap);
-    TriggerVolume->OnComponentEndOverlap.AddDynamic(this, &USpawnObjectClient::OnEndOverlap);
-    TriggerVolume->RegisterComponent();
+    if (TriggerBase == nullptr)
+    {
+      continue;
+    }
+    TriggerBase->OnActorBeginOverlap.AddDynamic(this, &USpawnObjectClient::OnBeginOverlap);
   }
 }
 
@@ -40,58 +36,92 @@ void USpawnObjectClient::CreateServiceClient()
   Response = MakeShareable(new mujoco_srvs::SpawnObject::Response());
 }
 
-void USpawnObjectClient::CallService(const TArray<AStaticMeshActor *> &Objects)
+void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
 {
-  static TMap<FString, mujoco_msgs::ModelState::EType> TypeMap =
+  static TMap<FString, mujoco_msgs::ObjectInfo::EType> TypeMap =
       {
-          {TEXT("Cube"), mujoco_msgs::ModelState::EType::CUBE},
-          {TEXT("Cylinder"), mujoco_msgs::ModelState::EType::CYLINDER},
-          {TEXT("Sphere"), mujoco_msgs::ModelState::EType::SPHERE},
-          {TEXT(""), mujoco_msgs::ModelState::EType::MESH}};
+          {TEXT("Cube"), mujoco_msgs::ObjectInfo::CUBE},
+          {TEXT("Cylinder"), mujoco_msgs::ObjectInfo::CYLINDER},
+          {TEXT("Sphere"), mujoco_msgs::ObjectInfo::SPHERE}};
 
-  int32 ObjectNum = Objects.Num();
-  TArray<mujoco_msgs::ModelState> ModelStates;
-  ModelStates.Init(mujoco_msgs::ModelState(), ObjectNum);
+  TArray<mujoco_msgs::ObjectStatus> ObjectStatusArray;
+  ObjectStatusArray.Reserve(Objects.Num());
   std_msgs::Header Header(Seq++, FROSTime(), FrameId);
-  for (int32 i = 0; i < ObjectNum; i++)
-  {
-    if (Objects[i] != nullptr && Objects[i]->GetStaticMeshComponent() != nullptr)
-    {
-      ModelStates[i].SetHeader(Header);
-      ModelStates[i].SetName(Objects[i]->GetName());
-      geometry_msgs::Pose Pose;
-      Pose.SetPosition(FConversions::UToROS(Objects[i]->GetActorLocation()));
-      Pose.SetOrientation(FConversions::UToROS(Objects[i]->GetActorRotation().Quaternion()));
-      ModelStates[i].SetPose(Pose);
-      geometry_msgs::Twist Velocity;
-      Velocity.SetLinear(FConversions::UToROS(Objects[i]->GetStaticMeshComponent()->GetPhysicsLinearVelocity()));
-      Velocity.SetAngular(Objects[i]->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians());
-      ModelStates[i].SetVelocity(Velocity);
 
-      for (const TPair<FString, mujoco_msgs::ModelState::EType> &Type : TypeMap)
+  bool bShouldCallService = false;
+  for (AStaticMeshActor *const Object : Objects)
+  {
+    if (Object != nullptr &&
+        Object->GetStaticMeshComponent() != nullptr &&
+        GetRoboManager()->GetObjectController() != nullptr &&
+        GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) == nullptr)
+    {
+      bShouldCallService = true;
+
+      GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);
+
+      mujoco_msgs::ObjectStatus ObjectStatus;
+      mujoco_msgs::ObjectInfo ObjectInfo;
+      geometry_msgs::Pose Pose;
+      geometry_msgs::Twist Velocity;
+
+      ObjectStatus.SetHeader(Header);
+
+      ObjectInfo.SetName(Object->GetName());
+      ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
+      for (const TPair<FString, mujoco_msgs::ObjectInfo::EType> &Type : TypeMap)
       {
-        if (Objects[i]->GetName().Contains(Type.Key))
+        if (Object->GetName().Contains(Type.Key))
         {
-          ModelStates[i].SetType(Type.Value);
+          ObjectInfo.SetType(Type.Value);
           break;
         }
       }
-
-      ModelStates[i].SetScale(Objects[i]->GetActorScale3D()/2);
+      ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
       FLinearColor Color(1.f, 1.f, 1.f, 1.f);
-      if (Objects[i]->GetStaticMeshComponent()->GetStaticMesh() != nullptr && Objects[i]->GetStaticMeshComponent()->GetStaticMesh()->GetMaterial(0))
+      if (Object->GetStaticMeshComponent()->GetStaticMesh() != nullptr && Object->GetStaticMeshComponent()->GetStaticMesh()->GetMaterial(0))
       {
-        Objects[i]->GetStaticMeshComponent()->GetStaticMesh()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
+        Object->GetStaticMeshComponent()->GetStaticMesh()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
       }
-      ModelStates[i].SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, Color.A));
+      ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, Color.A));
+      geometry_msgs::Inertia Inertial;
+      Inertial.SetM(Object->GetStaticMeshComponent()->GetMass());
+      Inertial.SetCom(FConversions::CmToM(Object->GetStaticMeshComponent()->GetCenterOfMass() - Object->GetActorLocation()));
+      Inertial.SetIxx(Object->GetStaticMeshComponent()->GetInertiaTensor().X / 10000);
+      Inertial.SetIyy(Object->GetStaticMeshComponent()->GetInertiaTensor().Y / 10000);
+      Inertial.SetIzz(Object->GetStaticMeshComponent()->GetInertiaTensor().Z / 10000);
+      Inertial.SetIxy(0.0);
+      Inertial.SetIxz(0.0);
+      Inertial.SetIyz(0.0);
+      ObjectInfo.SetInertial(Inertial);
+      FString Mesh = Object->GetStaticMeshComponent()->GetStaticMesh()->GetName();
+      Mesh.RemoveFromStart(TEXT("SM_"));
+      Mesh.Append(TEXT(".xml"));
+      ObjectInfo.SetMesh(Mesh);
+      ObjectStatus.SetInfo(ObjectInfo);
 
-      GetRoboManager()->GetObjectController()->AddObject(Objects[i]);
+      Pose.SetPosition(FConversions::UToROS(Object->GetActorLocation()));
+      Pose.SetOrientation(FConversions::UToROS(Object->GetActorRotation().Quaternion()));
+      ObjectStatus.SetPose(Pose);
+
+      Velocity.SetLinear(FConversions::UToROS(Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity()));
+      Velocity.SetAngular(Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians() * FVector(-1, 1, -1));
+      ObjectStatus.SetVelocity(Velocity);
+
+      UE_LOG(LogSpawnObjectClient, Warning, TEXT("qvel: %s - %s"),
+             *Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity().ToString(),
+             *Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians().ToString())
+
+      ObjectStatusArray.Add(ObjectStatus);
     }
   }
 
-  StaticCastSharedPtr<mujoco_srvs::SpawnObject::Request>(Request)->SetModelStates(ModelStates);
+  StaticCastSharedPtr<mujoco_srvs::SpawnObject::Request>(Request)->SetObjects(ObjectStatusArray);
 
-  Super::CallService();
+  if (bShouldCallService)
+  {
+    Super::CallService();
+  }
 }
 
 void USpawnObjectClient::Tick()
@@ -99,18 +129,12 @@ void USpawnObjectClient::Tick()
   Super::Tick();
 }
 
-void USpawnObjectClient::OnBeginOverlap(UPrimitiveComponent *OverlappedComp, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
+void USpawnObjectClient::OnBeginOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
-  if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(OtherActor))
+  if (AStaticMeshActor *const Object = Cast<AStaticMeshActor>(OtherActor))
   {
-    UE_LOG(LogSpawnObjectClient, Log, TEXT("%s entered"), *OtherActor->GetName());
     CallService({Object});
   }
-}
-
-void USpawnObjectClient::OnEndOverlap(UPrimitiveComponent *OverlappedComp, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex)
-{
-  UE_LOG(LogSpawnObjectClient, Log, TEXT("%s left"), *OtherActor->GetName());
 }
 
 FSpawnObjectClientCallback::FSpawnObjectClientCallback(const FString &InServiceName, const FString &InServiceType) : FROSBridgeSrvClient(InServiceName, InServiceType)
@@ -119,5 +143,4 @@ FSpawnObjectClientCallback::FSpawnObjectClientCallback(const FString &InServiceN
 
 void FSpawnObjectClientCallback::Callback(TSharedPtr<FROSBridgeSrv::SrvResponse> InResponse)
 {
-  UE_LOG(LogSpawnObjectClient, Log, TEXT("%s"), *InResponse->ToString())
 }

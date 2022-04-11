@@ -4,14 +4,17 @@
 
 #include "ROS/ROSBase.h"
 
-#include "ROSSubscriber.generated.h"
+#include "ROSPublisher.generated.h"
 
 USTRUCT()
-struct FROSSubscriberParameter
+struct FROSPublisherParameter
 {
   GENERATED_BODY()
 
 public:
+  UPROPERTY(EditAnywhere)
+  float PublishRate = 60.f;
+
   UPROPERTY(EditAnywhere)
   FString Topic;
 
@@ -20,20 +23,26 @@ public:
 };
 
 UCLASS()
-class UROBOVIZ_API UROSSubscriber : public UROSBase
+class UROBOVIZ_API UROSPublisher : public UROSBase
 {
   GENERATED_BODY()
+
+public:
+  void Tick() override;
 
 protected:
   virtual void Init() override;
 
 protected:
-  virtual void CreateSubscriber() {}
+  virtual void Publish() {}
 
 public:
   UPROPERTY(EditAnywhere)
-  FROSSubscriberParameter CommonSubscriberParameters;
+  FROSPublisherParameter CommonPublisherParameters;
 
 protected:
-  TSharedPtr<FROSBridgeSubscriber> Subscriber;
+  TSharedPtr<FROSBridgePublisher> Publisher;
+
+private:
+  FROSTime PublishTime;
 };

@@ -1,7 +1,8 @@
 #pragma once
 
 #include "ROSBridgeSrv.h"
-#include "mujoco_msgs/ModelState.h"
+
+#include "mujoco_msgs/ObjectStatus.h"
 
 namespace mujoco_srvs
 {
@@ -11,31 +12,32 @@ namespace mujoco_srvs
 	public:
 		SpawnObject()
 		{
-			SrvType = TEXT("mujoco_srvs/ModelState");
+			SrvType = TEXT("mujoco_srvs/SpawnObject");
 		}
 
 		class Request : public SrvRequest
 		{
 		private:
-			TArray<mujoco_msgs::ModelState> ModelStates;
+			TArray<mujoco_msgs::ObjectStatus> Objects;
 
 		public:
-			Request(const TArray<mujoco_msgs::ModelState> &InModelStates) : ModelStates(InModelStates) {}
-
 			Request() {}
 
-			TArray<mujoco_msgs::ModelState> GetModelStates() const { return ModelStates; }
+			Request(const TArray<mujoco_msgs::ObjectStatus> &InObjects) : Objects(InObjects) {}
 
-			void SetModelStates(const TArray<mujoco_msgs::ModelState> &InModelStates) { ModelStates = InModelStates; }
+			TArray<mujoco_msgs::ObjectStatus> GetObjects() const { return Objects; }
+
+			void SetObjects(const TArray<mujoco_msgs::ObjectStatus> &InObjects) { Objects = InObjects; }
 
 			virtual void FromJson(TSharedPtr<FJsonObject> JsonObject) override
 			{
-				TArray<TSharedPtr<FJsonValue>> ModelStatePtrArray = JsonObject->GetArrayField(TEXT("model_states"));
-				for (const TSharedPtr<FJsonValue> &ModelStatePtr : ModelStatePtrArray)
+				Objects.Empty();
+				TArray<TSharedPtr<FJsonValue>> ObjectPtrArray = JsonObject->GetArrayField(TEXT("objects"));
+				for (const TSharedPtr<FJsonValue> &ObjectPtr : ObjectPtrArray)
 				{
-					mujoco_msgs::ModelState ModelState =
-							mujoco_msgs::ModelState::GetFromJson(ModelStatePtr->AsObject());
-					ModelStates.Add(ModelState);
+					mujoco_msgs::ObjectStatus Object =
+							mujoco_msgs::ObjectStatus::GetFromJson(ObjectPtr->AsObject());
+					Objects.Add(Object);
 				}
 			}
 
@@ -48,28 +50,28 @@ namespace mujoco_srvs
 
 			virtual FString ToString() const override
 			{
-				FString ModelStatesString = TEXT("[ ");
-				for (const mujoco_msgs::ModelState &ModelState : ModelStates)
+				FString ObjectsString = TEXT("[ ");
+				for (const mujoco_msgs::ObjectStatus &Object : Objects)
 				{
-					ModelStatesString += ModelState.ToString() + TEXT(", ");
+					ObjectsString += Object.ToString() + TEXT(", ");
 				}
-				ModelStatesString.RemoveFromEnd(TEXT(", "));
-				ModelStatesString += TEXT(" ]");
+				ObjectsString.RemoveFromEnd(TEXT(", "));
+				ObjectsString += TEXT(" ]");
 
-				return TEXT("SpawnObject::Request { model_states = ") + ModelStatesString + TEXT(" } ");
+				return TEXT("SpawnObject::Request { objects = ") + ObjectsString + TEXT(" } ");
 			}
 
 			virtual TSharedPtr<FJsonObject> ToJsonObject() const
 			{
-				TSharedPtr<FJsonObject> Object = MakeShareable<FJsonObject>(new FJsonObject());
-				TArray<TSharedPtr<FJsonValue>> ModelStatePtrArray;
-				for (const mujoco_msgs::ModelState &ModelState : ModelStates)
+				TSharedPtr<FJsonObject> ObjectJsonObject = MakeShareable<FJsonObject>(new FJsonObject());
+				TArray<TSharedPtr<FJsonValue>> ObjectPtrArray;
+				for (const mujoco_msgs::ObjectStatus &Object : Objects)
 				{
-					TSharedPtr<FJsonValue> ModelStatePtr = MakeShareable(new FJsonValueObject(ModelState.ToJsonObject()));
-					ModelStatePtrArray.Add(ModelStatePtr);
+					TSharedPtr<FJsonValue> ObjectPtr = MakeShareable(new FJsonValueObject(Object.ToJsonObject()));
+					ObjectPtrArray.Add(ObjectPtr);
 				}
-				Object->SetArrayField(TEXT("model_states"), ModelStatePtrArray);
-				return Object;
+				ObjectJsonObject->SetArrayField(TEXT("objects"), ObjectPtrArray);
+				return ObjectJsonObject;
 			}
 		};
 
@@ -94,9 +96,9 @@ namespace mujoco_srvs
 
 			static Response GetFromJson(TSharedPtr<FJsonObject> JsonObject)
 			{
-				Response Resp;
-				Resp.FromJson(JsonObject);
-				return Resp;
+				Response Res;
+				Res.FromJson(JsonObject);
+				return Res;
 			}
 
 			virtual FString ToString() const override

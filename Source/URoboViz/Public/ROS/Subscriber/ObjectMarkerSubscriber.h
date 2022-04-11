@@ -1,27 +1,27 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ROSSubscriber.h"
-#include "ModelMarkerSubscriber.generated.h"
+#include "ObjectMarkerSubscriber.generated.h"
 
 class ObjectController;
 
 UCLASS()
-class UROBOVIZ_API UModelMarkerSubscriber final : public UROSSubscriber
+class UROBOVIZ_API UObjectMarkerSubscriber final : public UROSSubscriber
 {
   GENERATED_BODY()
 
 public:
-  UModelMarkerSubscriber();
+  UObjectMarkerSubscriber();
 
 protected:
   void CreateSubscriber() override;
 
 };
 
-class UROBOVIZ_API FModelMarkerSubscriberCallback final : public FROSBridgeSubscriber
+class UROBOVIZ_API FObjectMarkerSubscriberCallback final : public FROSBridgeSubscriber
 {
 public:
-  FModelMarkerSubscriberCallback(FString InTopic, FString InType, UObjectController *InObjectController);
+  FObjectMarkerSubscriberCallback(FString InTopic, FString InType, UObjectController *InObjectController);
 
   TSharedPtr<FROSBridgeMsg> ParseMessage(TSharedPtr<FJsonObject> JsonObject) const override;
 

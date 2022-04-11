@@ -1,55 +1,55 @@
-#include "ROS/Subscriber/ModelMarkerSubscriber.h"
+#include "ROS/Subscriber/ObjectMarkerSubscriber.h"
 #include "ObjectController.h"
 #include "visualization_msgs/Marker.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogModelMarkerSubscriber, Log, All)
+DEFINE_LOG_CATEGORY_STATIC(LogObjectMarkerSubscriber, Log, All)
 
-UModelMarkerSubscriber::UModelMarkerSubscriber()
+UObjectMarkerSubscriber::UObjectMarkerSubscriber()
 {
   CommonSubscriberParameters.Topic = TEXT("/visualization_marker");
   CommonSubscriberParameters.MessageType = TEXT("visualization_msgs/Marker");
 }
 
-void UModelMarkerSubscriber::CreateSubscriber()
+void UObjectMarkerSubscriber::CreateSubscriber()
 {
   if (GetRoboManager() == nullptr)
   {
-    UE_LOG(LogModelMarkerSubscriber, Warning, TEXT("RoboManager of %s not found"), *GetName())
+    UE_LOG(LogObjectMarkerSubscriber, Warning, TEXT("RoboManager of %s not found"), *GetName())
     return;
   }
   if (UObjectController *ObjectController = GetRoboManager()->GetObjectController())
   {
-    Subscriber = MakeShareable<FModelMarkerSubscriberCallback>(
-        new FModelMarkerSubscriberCallback(CommonSubscriberParameters.Topic, CommonSubscriberParameters.MessageType, ObjectController));
+    Subscriber = MakeShareable<FObjectMarkerSubscriberCallback>(
+        new FObjectMarkerSubscriberCallback(CommonSubscriberParameters.Topic, CommonSubscriberParameters.MessageType, ObjectController));
   }
 }
 
-FModelMarkerSubscriberCallback::FModelMarkerSubscriberCallback(
+FObjectMarkerSubscriberCallback::FObjectMarkerSubscriberCallback(
     FString InTopic, FString InType, UObjectController *InObjectController) : FROSBridgeSubscriber(InTopic, InType)
 {
   ObjectController = InObjectController;
 }
 
-TSharedPtr<FROSBridgeMsg> FModelMarkerSubscriberCallback::ParseMessage(TSharedPtr<FJsonObject> JsonObject) const
+TSharedPtr<FROSBridgeMsg> FObjectMarkerSubscriberCallback::ParseMessage(TSharedPtr<FJsonObject> JsonObject) const
 {
-  TSharedPtr<visualization_msgs::Marker> ModelMarker =
+  TSharedPtr<visualization_msgs::Marker> ObjectMarker =
       MakeShareable<visualization_msgs::Marker>(new visualization_msgs::Marker());
 
-  ModelMarker->FromJson(JsonObject);
+  ObjectMarker->FromJson(JsonObject);
 
-  return StaticCastSharedPtr<FROSBridgeMsg>(ModelMarker);
+  return StaticCastSharedPtr<FROSBridgeMsg>(ObjectMarker);
 }
 
-void FModelMarkerSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
+void FObjectMarkerSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
 {
   if (ObjectController != nullptr)
   {
-    TSharedPtr<visualization_msgs::Marker> ModelMarker = StaticCastSharedPtr<visualization_msgs::Marker>(Msg);
+    TSharedPtr<visualization_msgs::Marker> ObjectMarker = StaticCastSharedPtr<visualization_msgs::Marker>(Msg);
 
-    const FString ObjectName = ModelMarker->GetNamespace();
-    if (AStaticMeshActor *Object = ObjectController->GetObject(ObjectName))
+    const FString ObjectName = ObjectMarker->GetNamespace();
+    if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectName))
     {
-      ObjectController->MoveObjectFromROS(Object, *ModelMarker);
+      ObjectController->MoveObjectByMarker(Object, *ObjectMarker);
     }
   }
 }

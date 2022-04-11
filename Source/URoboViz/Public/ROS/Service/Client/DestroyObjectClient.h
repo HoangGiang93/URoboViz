@@ -4,16 +4,18 @@
 
 #include "ROSServiceClient.h"
 // clang-format off
-#include "SpawnObjectClient.generated.h"
+#include "DestroyObjectClient.generated.h"
 // clang-format on
 
+class UObjectController;
+
 UCLASS()
-class UROBOVIZ_API USpawnObjectClient : public UROSServiceClient
+class UROBOVIZ_API UDestroyObjectClient : public UROSServiceClient
 {
   GENERATED_BODY()
 
 public:
-  USpawnObjectClient();
+  UDestroyObjectClient();
 
 public:
   void Tick() override;
@@ -27,24 +29,21 @@ public:
   void CallService(const TSet<class AStaticMeshActor *> &Objects);
 
 private:
-  UFUNCTION()
-	void OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION()
+	void OnEndOverlap(AActor* OverlappedActor, AActor* OtherActor);
 
 public:
-  UPROPERTY(EditAnywhere)
-  FString FrameId = TEXT("");
-
   UPROPERTY(EditAnywhere)
   TSet<class ATriggerBase *> TriggerBases;
-
-private:
-  int32 Seq = 0;
 };
 
-class FSpawnObjectClientCallback : public FROSBridgeSrvClient
+class FDestroyObjectClientCallback : public FROSBridgeSrvClient
 {
 public:
-  FSpawnObjectClientCallback(const FString &InServiceName, const FString &InServiceType);
+  FDestroyObjectClientCallback(const FString &InServiceName, const FString &InServiceType, UObjectController *InObjectController);
 
   void Callback(TSharedPtr<FROSBridgeSrv::SrvResponse> InResponse) override;
+
+private:
+  UObjectController *ObjectController;
 };

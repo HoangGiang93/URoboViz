@@ -37,7 +37,7 @@ public:
 
 	void SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus);
 
-  bool SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus);
+	bool SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus);
 
 	void MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus);
 

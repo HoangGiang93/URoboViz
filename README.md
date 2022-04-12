@@ -7,7 +7,7 @@ https://user-images.githubusercontent.com/64316740/162844451-ef9468df-f4e2-42d1-
 
 ## Plugin Dependencies
 - [UROSBridge](https://github.com/robcog-iai/UROSBridge) - Unreal ROS Bridge topic / service communication via websocket
-- [UUtils](https://github.com/robcog-iai/UUtils) - Plugin with various utility modules for RobCoG
+- [UUtils](https://github.com/robcog-iai/UUtils) - Plugin with various utility modules
 
 ## ROS Dependencies
 - [mujoco_sim](https://github.com/HoangGiang93/mujoco_sim) - ROS interface for Mujoco simulator

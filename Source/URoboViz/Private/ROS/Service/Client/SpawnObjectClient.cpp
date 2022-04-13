@@ -12,7 +12,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogSpawnObjectClient, Log, All)
 
 USpawnObjectClient::USpawnObjectClient()
 {
-  CommonServiceClientParameters.ServiceName = TEXT("/spawn_objects");
+  CommonServiceClientParameters.ServiceName = TEXT("/mujoco/spawn_objects");
   CommonServiceClientParameters.ServiceType = TEXT("mujoco_srvs/SpawnObject");
 }
 
@@ -77,11 +77,11 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       }
       ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
       FLinearColor Color(1.f, 1.f, 1.f, 1.f);
-      if (Object->GetStaticMeshComponent()->GetStaticMesh() != nullptr && Object->GetStaticMeshComponent()->GetStaticMesh()->GetMaterial(0))
+      if (Object->GetStaticMeshComponent() != nullptr && Object->GetStaticMeshComponent()->GetMaterial(0))
       {
-        Object->GetStaticMeshComponent()->GetStaticMesh()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
+        Object->GetStaticMeshComponent()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
       }
-      ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, Color.A));
+      ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, 1-Color.A));
       geometry_msgs::Inertia Inertial;
       Inertial.SetM(Object->GetStaticMeshComponent()->GetMass());
       Inertial.SetCom(FConversions::CmToM(Object->GetStaticMeshComponent()->GetCenterOfMass() - Object->GetActorLocation()));

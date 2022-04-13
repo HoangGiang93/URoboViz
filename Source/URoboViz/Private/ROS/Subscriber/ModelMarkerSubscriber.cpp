@@ -8,7 +8,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogObjectMarkerSubscriber, Log, All)
 
 UObjectMarkerSubscriber::UObjectMarkerSubscriber()
 {
-  CommonSubscriberParameters.Topic = TEXT("/visualization_marker");
+  CommonSubscriberParameters.Topic = TEXT("/mujoco/visualization_marker");
   CommonSubscriberParameters.MessageType = TEXT("visualization_msgs/Marker");
 }
 

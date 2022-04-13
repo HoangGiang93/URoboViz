@@ -48,7 +48,6 @@ TSharedPtr<FROSBridgeSrv::SrvResponse> FSpawnObjectServerCallback::Callback(TSha
     return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(false));
   }
 
-  UE_LOG(LogSpawnObjectServer, Warning, TEXT("%s"), *Request->ToString())
   bool bSuccess = true;
   TArray<mujoco_msgs::ObjectStatus> Objects = Request->GetObjects();
   for (const mujoco_msgs::ObjectStatus &Object : Objects)

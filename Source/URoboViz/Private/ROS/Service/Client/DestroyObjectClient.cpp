@@ -12,7 +12,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogDestroyObjectClient, Log, All)
 
 UDestroyObjectClient::UDestroyObjectClient()
 {
-  CommonServiceClientParameters.ServiceName = TEXT("/destroy_objects");
+  CommonServiceClientParameters.ServiceName = TEXT("/mujoco/destroy_objects");
   CommonServiceClientParameters.ServiceType = TEXT("mujoco_srvs/DestroyObject");
 }
 

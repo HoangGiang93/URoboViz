@@ -34,6 +34,8 @@ public:
 public:
 	URobotController *GetController(const FString &ControllerName) const;
 
+	USensor *GetSensor(const FString &SensorName) const;
+
 	UObjectController *GetObjectController() const { return ObjectController; }
 
 private:

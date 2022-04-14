@@ -20,10 +20,10 @@ protected:
 
 public:
   UPROPERTY(EditAnywhere)
-  FString BaseControllerName;
+  FString BaseControllerName = TEXT("BaseController");
 
   UPROPERTY(EditAnywhere)
-  FString BaseName;
+  FString BaseName = TEXT("base_footprint");
 };
 
 class UROBOVIZ_API FBasePoseSubscriberCallback final : public FROSBridgeSubscriber

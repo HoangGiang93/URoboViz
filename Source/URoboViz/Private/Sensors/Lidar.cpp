@@ -99,7 +99,7 @@ void ULidar::Tick(float DeltaTime)
       float RangeMinInCm = FConversions::MToCm(RangeMin);
       float RangeMaxInCm = FConversions::MToCm(RangeMax);
 
-      FRotator ResultRotation(0.f, AngleInDeg, 0.f);
+      FRotator ResultRotation(0.f, -AngleInDeg, 0.f);
 
       FVector StartTrace = LidarLocation + RangeMinInCm * LidarQuat.RotateVector(ResultRotation.Vector());
       FVector EndTrace = LidarLocation + RangeMaxInCm * LidarQuat.RotateVector(ResultRotation.Vector());
@@ -131,7 +131,7 @@ void ULidar::Tick(float DeltaTime)
           DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, ScanTime, 0, 1.f);
         }
       }
-      Ranges.Add(HitInfo.Distance);
+      Ranges.Add(FConversions::CmToM(RangeMinInCm + HitInfo.Distance));
     }
     else
     {

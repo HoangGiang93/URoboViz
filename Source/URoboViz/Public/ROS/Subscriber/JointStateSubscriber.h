@@ -20,7 +20,7 @@ protected:
 
 public:
   UPROPERTY(EditAnywhere)
-  FString JointControllerName;
+  FString JointControllerName = TEXT("JointController");
 };
 
 class UROBOVIZ_API FJointStateSubscriberCallback final : public FROSBridgeSubscriber

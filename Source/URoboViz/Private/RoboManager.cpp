@@ -77,3 +77,18 @@ URobotController *ARoboManager::GetController(const FString &ControllerName) con
 	UE_LOG(LogRoboManager, Warning, TEXT("Controller %s not found"), *ControllerName)
 	return nullptr;
 }
+
+USensor *ARoboManager::GetSensor(const FString &SensorName) const
+{
+	TArray<FRoboManagerContainer> RobotManagerContainers;
+	RobotManager.GenerateValueArray(RobotManagerContainers);
+	for (const FRoboManagerContainer &RobotManagerContainer : RobotManagerContainers)
+	{
+		if (RobotManagerContainer.Sensors.Find(SensorName))
+		{
+			return RobotManagerContainer.Sensors[SensorName];
+		}
+	}
+	UE_LOG(LogRoboManager, Warning, TEXT("Sensor %s not found"), *SensorName)
+	return nullptr;
+}

@@ -43,7 +43,7 @@ void ARoboManager::Tick(float DeltaTime)
 		{
 			continue;
 		}
-		Robot.Value.Tick();
+		Robot.Value.Tick(DeltaTime);
 	}
 
 	ROSManager.Tick();

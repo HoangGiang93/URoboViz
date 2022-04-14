@@ -26,7 +26,7 @@ struct FJoint
 	UPROPERTY(VisibleAnywhere)
 	EJointType JointType = EJointType::Revolute;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditAnywhere)
 	float JointPosition = 0.f;
 
 	FJoint()

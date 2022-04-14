@@ -4,22 +4,22 @@
 
 #include "RoboManagerContainer.generated.h"
 
-class ASkeletalMeshActor;
-class URobotController;
-
 USTRUCT(Blueprintable)
 struct FRoboManagerContainer
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TMap<FString, URobotController *> RobotControllers;
+	TMap<FString, class URobotController *> RobotControllers;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+	TMap<FString, class USensor *> Sensors;
 
 	FRoboManagerContainer()
 	{
 	}
 
-	void Init(ASkeletalMeshActor *Owner);
+	void Init(class ASkeletalMeshActor *Owner);
 
-	void Tick();
+	void Tick(float DeltaTime);
 };

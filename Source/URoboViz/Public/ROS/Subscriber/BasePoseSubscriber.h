@@ -21,15 +21,12 @@ protected:
 public:
   UPROPERTY(EditAnywhere)
   FString BaseControllerName = TEXT("BaseController");
-
-  UPROPERTY(EditAnywhere)
-  FString BaseName = TEXT("base_footprint");
 };
 
 class UROBOVIZ_API FBasePoseSubscriberCallback final : public FROSBridgeSubscriber
 {
 public:
-  FBasePoseSubscriberCallback(FString InTopic, FString InType, UBaseController *InBaseController, FString InBaseName);
+  FBasePoseSubscriberCallback(FString InTopic, FString InType, UBaseController *InBaseController);
 
   TSharedPtr<FROSBridgeMsg> ParseMessage(TSharedPtr<FJsonObject> JsonObject) const override;
 
@@ -37,6 +34,4 @@ public:
 
 private:
   UBaseController *BaseController;
-
-  FString BaseName;
 };

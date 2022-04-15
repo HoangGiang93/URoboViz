@@ -2,15 +2,14 @@
 
 #include "ROS/Subscriber/BasePoseSubscriber.h"
 #include "Controllers/BaseController.h"
-#include "sensor_msgs/JointState.h"
-#include "tf2_msgs/TFMessage.h"
+#include "geometry_msgs/TransformStamped.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBasePoseSubscriber, Log, All)
 
 UBasePoseSubscriber::UBasePoseSubscriber()
 {
-  CommonSubscriberParameters.Topic = TEXT("/tf");
-  CommonSubscriberParameters.MessageType = TEXT("tf2_msgs/TFMessage");
+  CommonSubscriberParameters.Topic = TEXT("/base_footprint");
+  CommonSubscriberParameters.MessageType = TEXT("geometry_msgs/TransformStamped");
 }
 
 void UBasePoseSubscriber::CreateSubscriber()
@@ -24,7 +23,7 @@ void UBasePoseSubscriber::CreateSubscriber()
   if (UBaseController *BaseController = Cast<UBaseController>(GetRoboManager()->GetController(BaseControllerName)))
   {
     Subscriber = MakeShareable<FBasePoseSubscriberCallback>(
-        new FBasePoseSubscriberCallback(CommonSubscriberParameters.Topic, CommonSubscriberParameters.MessageType, BaseController, BaseName));
+        new FBasePoseSubscriberCallback(CommonSubscriberParameters.Topic, CommonSubscriberParameters.MessageType, BaseController));
   }
   else
   {
@@ -33,36 +32,30 @@ void UBasePoseSubscriber::CreateSubscriber()
 }
 
 FBasePoseSubscriberCallback::FBasePoseSubscriberCallback(
-    FString InTopic, FString InType, UBaseController *InBaseController, FString InBaseName) : FROSBridgeSubscriber(InTopic, InType)
+    FString InTopic, FString InType, UBaseController *InBaseController) : FROSBridgeSubscriber(InTopic, InType)
 {
   BaseController = InBaseController;
-  BaseName = InBaseName;
 }
 
 TSharedPtr<FROSBridgeMsg> FBasePoseSubscriberCallback::ParseMessage(TSharedPtr<FJsonObject> JsonObject) const
 {
-  TSharedPtr<tf2_msgs::TFMessage> TF =
-      MakeShareable<tf2_msgs::TFMessage>(new tf2_msgs::TFMessage());
+  TSharedPtr<geometry_msgs::TransformStamped> BasePose =
+      MakeShareable<geometry_msgs::TransformStamped>(new geometry_msgs::TransformStamped());
 
-  TF->FromJson(JsonObject);
+  BasePose->FromJson(JsonObject);
 
-  return StaticCastSharedPtr<FROSBridgeMsg>(TF);
+  return StaticCastSharedPtr<FROSBridgeMsg>(BasePose);
 }
 
 void FBasePoseSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
 {
   if (BaseController)
   {
-    TSharedPtr<tf2_msgs::TFMessage> TF = StaticCastSharedPtr<tf2_msgs::TFMessage>(Msg);
-    for (const geometry_msgs::TransformStamped &Transform : TF->GetTransforms())
-    {
-      if (Transform.GetChildFrameId().Compare(BaseName) == 0)
-      {
-        FVector BaseLocation = Transform.GetTransform().GetTranslation().GetVector();
-        FQuat BaseRotation = Transform.GetTransform().GetRotation().GetQuat();
-        BaseController->SetDesiredBasePoseFromROS(BaseLocation, BaseRotation);
-        break;
-      }
-    }
+    TSharedPtr<geometry_msgs::TransformStamped> BasePose = StaticCastSharedPtr<geometry_msgs::TransformStamped>(Msg);
+
+    FVector BaseLocation = BasePose->GetTransform().GetTranslation().GetVector();
+    FQuat BaseRotation = BasePose->GetTransform().GetRotation().GetQuat();
+
+    BaseController->SetDesiredBasePoseFromROS(BaseLocation, BaseRotation);
   }
 }

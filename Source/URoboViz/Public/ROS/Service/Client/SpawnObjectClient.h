@@ -15,9 +15,6 @@ class UROBOVIZ_API USpawnObjectClient : public UROSServiceClient
 public:
   USpawnObjectClient();
 
-public:
-  void Tick() override;
-
 protected:
   void Init() override;
 

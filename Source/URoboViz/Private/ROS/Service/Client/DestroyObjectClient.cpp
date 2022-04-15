@@ -62,11 +62,6 @@ void UDestroyObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
   Super::CallService();
 }
 
-void UDestroyObjectClient::Tick()
-{
-  Super::Tick();
-}
-
 void UDestroyObjectClient::OnEndOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
   if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(OtherActor))

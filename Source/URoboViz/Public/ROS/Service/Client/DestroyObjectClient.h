@@ -16,10 +16,7 @@ class UROBOVIZ_API UDestroyObjectClient : public UROSServiceClient
 
 public:
   UDestroyObjectClient();
-
-public:
-  void Tick() override;
-
+  
 protected:
   void Init() override;
 

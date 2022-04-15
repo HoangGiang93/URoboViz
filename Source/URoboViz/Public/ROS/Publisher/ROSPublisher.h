@@ -28,7 +28,7 @@ class UROBOVIZ_API UROSPublisher : public UROSBase
   GENERATED_BODY()
 
 public:
-  void Tick() override;
+  void Tick();
 
 protected:
   virtual void Init() override;

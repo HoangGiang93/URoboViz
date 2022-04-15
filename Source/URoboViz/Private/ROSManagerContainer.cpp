@@ -8,13 +8,18 @@
 
 void FROSManagerContainer::Init()
 {
+	Handler = MakeShareable<FROSBridgeHandler>(new FROSBridgeHandler(Host, Port));
+
+	// Connect to ROSBridge Websocket server
+  Handler->Connect();
+
 	for (UROSPublisher *ROSPublisher : ROSPublishers)
 	{
 		if (ROSPublisher == nullptr)
 		{
 			continue;
 		}
-		ROSPublisher->Connect(Host, Port);
+		ROSPublisher->Connect(Handler);
 	}
 	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
 	{
@@ -22,7 +27,7 @@ void FROSManagerContainer::Init()
 		{
 			continue;
 		}
-		ROSSubscriber->Connect(Host, Port);
+		ROSSubscriber->Connect(Handler);
 	}
 	for (UROSServiceServer *ROSServiceServer : ROSServiceServers)
 	{
@@ -30,7 +35,7 @@ void FROSManagerContainer::Init()
 		{
 			continue;
 		}
-		ROSServiceServer->Connect(Host, Port);
+		ROSServiceServer->Connect(Handler);
 	}
 	for (UROSServiceClient *ROSServiceClient : ROSServiceClients)
 	{
@@ -38,7 +43,7 @@ void FROSManagerContainer::Init()
 		{
 			continue;
 		}
-		ROSServiceClient->Connect(Host, Port);
+		ROSServiceClient->Connect(Handler);
 	}
 }
 
@@ -80,6 +85,11 @@ void FROSManagerContainer::Deinit()
 
 void FROSManagerContainer::Tick()
 {
+	if (Handler.IsValid())
+	{
+		Handler->Process();
+	}
+	
 	for (UROSPublisher *ROSPublisher : ROSPublishers)
 	{
 		if (ROSPublisher == nullptr)
@@ -87,29 +97,5 @@ void FROSManagerContainer::Tick()
 			continue;
 		}
 		ROSPublisher->Tick();
-	}
-	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
-	{
-		if (ROSSubscriber == nullptr)
-		{
-			continue;
-		}
-		ROSSubscriber->Tick();
-	}
-	for (UROSServiceServer *ROSServiceServer : ROSServiceServers)
-	{
-		if (ROSServiceServer == nullptr)
-		{
-			continue;
-		}
-		ROSServiceServer->Tick();
-	}
-	for (UROSServiceClient *ROSServiceClient : ROSServiceClients)
-	{
-		if (ROSServiceClient == nullptr)
-		{
-			continue;
-		}
-		ROSServiceClient->Tick();
 	}
 }

@@ -120,11 +120,6 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
   }
 }
 
-void USpawnObjectClient::Tick()
-{
-  Super::Tick();
-}
-
 void USpawnObjectClient::OnBeginOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
   if (AStaticMeshActor *const Object = Cast<AStaticMeshActor>(OtherActor))

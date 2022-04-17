@@ -53,5 +53,5 @@ private:
 	TSet<AStaticMeshActor *> ObjectsInUnreal;
 
 private:
-	TMap<FVector4, FString> ColorMap;
+	TMap<FLinearColor, FString> ColorMap;
 };

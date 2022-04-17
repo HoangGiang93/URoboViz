@@ -124,13 +124,6 @@ void ULidar::Tick(float DeltaTime)
           DrawDebugPoint(GetWorld(), EndTrace, 10, FColor::Red, false, ScanTime, 0);
         }
       }
-      else
-      {
-        if (bDrawLines)
-        {
-          DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, ScanTime, 0, 1.f);
-        }
-      }
       Ranges.Add(FConversions::CmToM(RangeMinInCm + HitInfo.Distance));
     }
     else

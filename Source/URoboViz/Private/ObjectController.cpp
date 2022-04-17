@@ -29,14 +29,14 @@ static FTransform GetTransform(const visualization_msgs::Marker &ObjectMarker)
 UObjectController::UObjectController()
 {
 	ColorMap = {
-			{FVector4(0, 0, 1, 1), TEXT("Blue")},
-			{FVector4(0, 1, 1, 1), TEXT("Cyan")},
-			{FVector4(0, 1, 0, 1), TEXT("Green")},
-			{FVector4(1, 0, 0.5, 1), TEXT("Pink")},
-			{FVector4(0.5, 0, 1, 1), TEXT("Purple")},
-			{FVector4(1, 0, 0, 1), TEXT("Red")},
-			{FVector4(1, 1, 0, 1), TEXT("Yellow")},
-			{FVector4(0.8, 0.1, 0, 1), TEXT("Orange")}};
+			{FLinearColor(0, 0, 1, 1), TEXT("Blue")},
+			{FLinearColor(0, 1, 1, 1), TEXT("Cyan")},
+			{FLinearColor(0, 1, 0, 1), TEXT("Green")},
+			{FLinearColor(1, 0, 0.5, 1), TEXT("Pink")},
+			{FLinearColor(0.5, 0, 1, 1), TEXT("Purple")},
+			{FLinearColor(1, 0, 0, 1), TEXT("Red")},
+			{FLinearColor(1, 1, 0, 1), TEXT("Yellow")},
+			{FLinearColor(0.8, 0.1, 0, 1), TEXT("Orange")}};
 }
 
 AStaticMeshActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
@@ -143,9 +143,9 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 								StaticMeshComponent->SetStaticMesh(StaticMesh);
 								if (ObjectStatus.GetInfo().GetType() != mujoco_msgs::ObjectInfo::MESH)
 								{
-									if (ColorMap.Find(ObjectStatus.GetInfo().GetColor().GetColor()))
+									if (ColorMap.Find(FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())))
 									{
-										FString ColorName = TEXT("M_") + ColorMap[ObjectStatus.GetInfo().GetColor().GetColor()];
+										FString ColorName = TEXT("M_") + ColorMap[FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())];
 										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/Game/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
 										StaticMeshComponent->SetMaterial(0, Material);
 									}

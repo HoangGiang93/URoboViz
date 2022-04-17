@@ -81,7 +81,7 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       {
         Object->GetStaticMeshComponent()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
       }
-      ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, 1-Color.A));
+      ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, Color.A));
       geometry_msgs::Inertia Inertial;
       Inertial.SetM(Object->GetStaticMeshComponent()->GetMass());
       Inertial.SetCom(FConversions::CmToM(Object->GetStaticMeshComponent()->GetCenterOfMass() - Object->GetActorLocation()));

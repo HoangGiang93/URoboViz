@@ -27,6 +27,8 @@ public:
 	UObjectController();
 
 public:
+	void Tick(float DeltaTime);
+
 	AStaticMeshActor *GetObjectInMujoco(const FString &ObjectName) const;
 
 	AStaticMeshActor *GetObjectInUnreal(const FString &ObjectName) const;
@@ -45,11 +47,18 @@ public:
 
 	void DestroyObjectInMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState);
 
+public:
+	UPROPERTY(EditAnywhere)
+	bool bShowLinearVelocity;
+
+	UPROPERTY(EditAnywhere)
+	bool bShowAngularVelocity;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	TSet<AStaticMeshActor *> ObjectsInMujoco;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditAnywhere)
 	TSet<AStaticMeshActor *> ObjectsInUnreal;
 
 private:

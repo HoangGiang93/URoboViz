@@ -69,7 +69,7 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
       for (const TPair<FString, mujoco_msgs::ObjectInfo::EType> &Type : TypeMap)
       {
-        if (Object->GetName().Contains(Type.Key))
+        if (Object->GetStaticMeshComponent()->GetStaticMesh()->GetName().Contains(Type.Key))
         {
           ObjectInfo.SetType(Type.Value);
           break;
@@ -101,9 +101,9 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       Pose.SetPosition(FConversions::UToROS(Object->GetActorLocation()));
       Pose.SetOrientation(FConversions::UToROS(Object->GetActorRotation().Quaternion()));
       ObjectStatus.SetPose(Pose);
-
+      
       Velocity.SetLinear(FConversions::UToROS(Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity()));
-      Velocity.SetAngular(Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians() * FVector(-1, 1, -1));
+      Velocity.SetAngular(Object->GetActorRotation().UnrotateVector(Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians()) * FVector(-1, 1, -1));
       ObjectStatus.SetVelocity(Velocity);
 
       GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);

@@ -39,6 +39,48 @@ UObjectController::UObjectController()
 			{FLinearColor(0.8, 0.1, 0, 1), TEXT("Orange")}};
 }
 
+void UObjectController::Tick(float DeltaTime)
+{
+	for (AStaticMeshActor *const &Object : ObjectsInUnreal)
+	{
+		if (Object == nullptr)
+		{
+			continue;
+		}
+		const FVector LineStart = Object->GetActorLocation();
+		if (bShowLinearVelocity)
+		{
+			FVector LinearVelocity = Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity();
+			const double LinearVelocityLength = LinearVelocity.Length();
+			LinearVelocity.Normalize();
+			const FString LinearVelocityText = FString::Printf(TEXT("[%.2f, %.2f, %.2f] * %.2f m/s"), LinearVelocity.X, LinearVelocity.Y, LinearVelocity.Z, LinearVelocityLength / 100.f);
+			const FVector LineEnd = LineStart + LinearVelocity * 10;
+			DrawDebugDirectionalArrow(GetWorld(), LineStart, LineEnd, 1.f, FColor::Blue, false, -1.f, 0, 1.f);
+			FVector TextLocation;
+			if (LinearVelocityLength > 0.1f)
+			{
+				TextLocation = LinearVelocity * 10;
+			}
+			DrawDebugString(GetWorld(), TextLocation, LinearVelocityText, Object, FColor::Blue, DeltaTime, false, 0.5f);
+		}
+		if (bShowAngularVelocity)
+		{
+			FVector AngularVelocity = Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInDegrees();
+			double AngularVelocityLength = AngularVelocity.Length();
+			AngularVelocity.Normalize();
+			FString AngularVelocityText = FString::Printf(TEXT("[%.2f, %.2f, %.2f] * %.2f deg/s"), AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z, AngularVelocityLength);
+			const FVector LineEnd = LineStart + AngularVelocity * 10;
+			DrawDebugDirectionalArrow(GetWorld(), LineStart, LineEnd, 1.f, FColor::Cyan, false, -1.f, 0, 1.f);
+			FVector TextLocation;
+			if (AngularVelocityLength > 1.f)
+			{
+				TextLocation = AngularVelocity * 10;
+			}
+			DrawDebugString(GetWorld(), TextLocation, AngularVelocityText, Object, FColor::Cyan, DeltaTime, false, 0.5f);
+		}
+	}
+}
+
 AStaticMeshActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
 {
 	for (AStaticMeshActor *const &Object : ObjectsInMujoco)
@@ -65,13 +107,15 @@ AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName
 
 void UObjectController::AddObjectInMujoco(AStaticMeshActor *const Object)
 {
-	Object->GetStaticMeshComponent()->SetEnableGravity(false);
+	Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
+	// Object->GetStaticMeshComponent()->SetEnableGravity(false);
 	ObjectsInMujoco.Add(Object);
 }
 
 void UObjectController::RemoveObjectInMujoco(AStaticMeshActor *const Object)
 {
-	Object->GetStaticMeshComponent()->SetEnableGravity(true);
+	Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
+	// Object->GetStaticMeshComponent()->SetEnableGravity(true);
 	ObjectsInMujoco.Remove(Object);
 }
 
@@ -178,11 +222,11 @@ bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatu
 
 void UObjectController::DestroyObjectInMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState)
 {
+	RemoveObjectInMujoco(Object);
 	if (Object != nullptr && Object->GetStaticMeshComponent() != nullptr)
 	{
 		UStaticMeshComponent *StaticMeshComponent = Object->GetStaticMeshComponent();
 		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
-		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(ObjectState.GetVelocity().GetAngular().GetVector() * FVector(-1, 1, -1));
+		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(Object->GetActorRotation().RotateVector(ObjectState.GetVelocity().GetAngular().GetVector()) * FVector(-1, 1, -1));
 	}
-	RemoveObjectInMujoco(Object);
 }

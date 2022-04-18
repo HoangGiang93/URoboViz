@@ -47,6 +47,8 @@ void ARoboManager::Tick(float DeltaTime)
 	}
 
 	ROSManager.Tick();
+
+	ObjectController->Tick(DeltaTime);
 }
 
 void ARoboManager::Init()

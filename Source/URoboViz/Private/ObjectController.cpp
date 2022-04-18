@@ -108,14 +108,12 @@ AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName
 void UObjectController::AddObjectInMujoco(AStaticMeshActor *const Object)
 {
 	Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
-	// Object->GetStaticMeshComponent()->SetEnableGravity(false);
 	ObjectsInMujoco.Add(Object);
 }
 
 void UObjectController::RemoveObjectInMujoco(AStaticMeshActor *const Object)
 {
 	Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
-	// Object->GetStaticMeshComponent()->SetEnableGravity(true);
 	ObjectsInMujoco.Remove(Object);
 }
 
@@ -162,19 +160,19 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							switch (ObjectStatus.GetInfo().GetType())
 							{
 							case mujoco_msgs::ObjectInfo::CUBE:
-								MeshPath = TEXT("StaticMesh'/Game/Assets/StaticMeshes/SM_Cube.SM_Cube'");
+								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Cube.SM_Cube'");
 								break;
 
 							case mujoco_msgs::ObjectInfo::SPHERE:
-								MeshPath = TEXT("StaticMesh'/Game/Assets/StaticMeshes/SM_Sphere.SM_Sphere'");
+								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Sphere.SM_Sphere'");
 								break;
 
 							case mujoco_msgs::ObjectInfo::CYLINDER:
-								MeshPath = TEXT("StaticMesh'/Game/Assets/StaticMeshes/SM_Cylinder.SM_Cylinder'");
+								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Cylinder.SM_Cylinder'");
 								break;
 
 							case mujoco_msgs::ObjectInfo::MESH:
-								MeshPath = TEXT("StaticMesh'/Game/") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
+								MeshPath = TEXT("StaticMesh'") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
 								break;
 
 							default:
@@ -190,7 +188,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									if (ColorMap.Find(FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())))
 									{
 										FString ColorName = TEXT("M_") + ColorMap[FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())];
-										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/Game/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
+										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
 										StaticMeshComponent->SetMaterial(0, Material);
 									}
 								}

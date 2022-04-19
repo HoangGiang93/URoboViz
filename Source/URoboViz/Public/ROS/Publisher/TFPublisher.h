@@ -16,9 +16,6 @@ class UROBOVIZ_API UTFPublisher : public UROSPublisher
 public:
   UTFPublisher();
 
-public:
-  void AddObject(AActor *Object) { Objects.Add(Object); }
-
 protected:
   void Publish() override;
 
@@ -27,8 +24,5 @@ public:
   FString FrameId = TEXT("");
 
 private:
-  UPROPERTY(EditAnywhere)
-  TArray<AActor *> Objects;
-
   int32 Seq = 0;
 };

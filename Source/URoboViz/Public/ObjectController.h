@@ -33,6 +33,8 @@ public:
 
 	AStaticMeshActor *GetObjectInUnreal(const FString &ObjectName) const;
 
+	TSet<AStaticMeshActor *> GetObjectsInUnreal() const { return ObjectsInUnreal; }
+
 	void AddObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
 
 	void RemoveObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);

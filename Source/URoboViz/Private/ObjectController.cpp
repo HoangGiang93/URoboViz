@@ -157,22 +157,27 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							StaticMeshComponent->UnregisterComponent();
 
 							FString MeshPath;
+							FString MeshTypeString;
 							switch (ObjectStatus.GetInfo().GetType())
 							{
 							case mujoco_msgs::ObjectInfo::CUBE:
 								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Cube.SM_Cube'");
+								MeshTypeString = TEXT("Cube");
 								break;
 
 							case mujoco_msgs::ObjectInfo::SPHERE:
 								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Sphere.SM_Sphere'");
+								MeshTypeString = TEXT("Sphere");
 								break;
 
 							case mujoco_msgs::ObjectInfo::CYLINDER:
 								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Cylinder.SM_Cylinder'");
+								MeshTypeString = TEXT("Cylinder");
 								break;
 
 							case mujoco_msgs::ObjectInfo::MESH:
 								MeshPath = TEXT("StaticMesh'") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
+								MeshTypeString = TEXT("Mesh");
 								break;
 
 							default:
@@ -198,7 +203,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							StaticMeshComponent->SetGenerateOverlapEvents(true);
 							StaticMeshComponent->RegisterComponent();
 
-							Object->Tags.Add(TEXT("tf")); 
+							Object->Tags.Add(*MeshTypeString); 
 							
 							ObjectsInUnreal.Add(Object); });
 }

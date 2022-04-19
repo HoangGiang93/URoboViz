@@ -13,3 +13,6 @@ https://user-images.githubusercontent.com/64316740/162844451-ef9468df-f4e2-42d1-
 
 ## Installation
 To run this plugin properly, some dependencies need to be included. From Unreal side I use [UROSBridge](https://github.com/robcog-iai/UROSBridge) for ROS Communication and [UUtils](https://github.com/robcog-iai/UUtils) for coordinatation exchange between Unreal world and ROS world. To import robot from FBX format, I implemented an add-on for Blender [urdf_importer](https://github.com/HoangGiang93/urdf_importer), which can be used to convert robot from URDF to FBX format with textures. The robot can be controlled using physics engine of [Mujoco](https://mujoco.org/) with ROS Interface from [mujoco_sim](https://github.com/HoangGiang93/mujoco_sim). See [Wiki](https://github.com/HoangGiang93/URoboViz/wiki) for more information.
+
+## Tutorials
+The tutorials can be found in [Wiki](https://github.com/HoangGiang93/URoboViz/wiki)

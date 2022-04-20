@@ -24,6 +24,7 @@ namespace mujoco_msgs
   private:
     FString Name;
     EType Type;
+    bool Movable;
     geometry_msgs::Vector3 Size;
     std_msgs::ColorRGBA Rgba;
     geometry_msgs::Inertia Inertial;
@@ -37,10 +38,11 @@ namespace mujoco_msgs
 
     ObjectInfo(const FString &InName,
                const EType &InType,
+               bool InMovable,
                const geometry_msgs::Vector3 &InSize,
                const std_msgs::ColorRGBA &InRgba,
                const geometry_msgs::Inertia &InInertial,
-               const FString &InMesh) : Name(InName), Type(InType), Size(InSize), Rgba(InRgba), Inertial(InInertial), Mesh(InMesh)
+               const FString &InMesh) : Name(InName), Type(InType), Movable(InMovable), Size(InSize), Rgba(InRgba), Inertial(InInertial), Mesh(InMesh)
     {
       MsgType = "mujoco_msgs/ObjectInfo";
     }
@@ -54,6 +56,10 @@ namespace mujoco_msgs
     EType GetType() const { return Type; }
 
     void SetType(const EType &InType) { Type = InType; }
+
+    bool GetMovable() const { return Movable; }
+
+    void SetMovable(bool InMovable) { Movable = InMovable; }
 
     FVector GetSize() const { return Size.GetVector(); }
 
@@ -75,6 +81,7 @@ namespace mujoco_msgs
     {
       Name = JsonObject->GetStringField(TEXT("name"));
       Type = (EType)(JsonObject->GetNumberField(TEXT("type")));
+      Movable = JsonObject->GetBoolField(TEXT("movable"));
       Size = geometry_msgs::Vector3::GetFromJson(JsonObject->GetObjectField(TEXT("size")));
       Rgba = std_msgs::ColorRGBA::GetFromJson(JsonObject->GetObjectField(TEXT("rgba")));
       Inertial = geometry_msgs::Inertia::GetFromJson(JsonObject->GetObjectField(TEXT("inertial")));
@@ -92,6 +99,7 @@ namespace mujoco_msgs
     {
       return TEXT("ObjectInfo { name = ") + Name +
              TEXT(", type = ") + FString::FromInt(Type) +
+             TEXT(", movable = ") + (Movable ? TEXT("true") : TEXT("false")) +
              TEXT(", size = ") + Size.ToString() +
              TEXT(", rgba = ") + Rgba.ToString() +
              TEXT(", inertial = ") + Inertial.ToString() +
@@ -103,6 +111,7 @@ namespace mujoco_msgs
       TSharedPtr<FJsonObject> Object = MakeShareable<FJsonObject>(new FJsonObject());
       Object->SetStringField(TEXT("name"), Name);
       Object->SetNumberField(TEXT("type"), Type);
+      Object->SetBoolField(TEXT("movable"), Movable);
       Object->SetObjectField(TEXT("size"), Size.ToJsonObject());
       Object->SetObjectField(TEXT("rgba"), Rgba.ToJsonObject());
       Object->SetObjectField(TEXT("inertial"), Inertial.ToJsonObject());

@@ -75,6 +75,23 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
           break;
         }
       }
+      switch (Object->GetStaticMeshComponent()->Mobility)
+      {
+      case EComponentMobility::Static:
+        ObjectInfo.SetMovable(false);
+        break;
+
+      case EComponentMobility::Stationary:
+        ObjectInfo.SetMovable(false);
+        break;
+
+      case EComponentMobility::Movable:
+        ObjectInfo.SetMovable(true);
+        break;
+      
+      default:
+        break;
+      }
       ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
       FLinearColor Color(1.f, 1.f, 1.f, 1.f);
       if (Object->GetStaticMeshComponent() != nullptr && Object->GetStaticMeshComponent()->GetMaterial(0))

@@ -79,7 +79,7 @@ void UObjectController::Tick(float DeltaTime)
 			DrawDebugString(GetWorld(), TextLocation, AngularVelocityText, Object, FColor::Cyan, DeltaTime, false, 0.5f);
 		}
 	}
-	
+
 	ObjectsInMujoco = ObjectsInMujoco.Union(ObjectsToAddInMujoco);
 	ObjectsToAddInMujoco.Empty();
 	for (AStaticMeshActor *const &Object : ObjectsToRemoveInMujoco)
@@ -144,7 +144,7 @@ void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoc
 		const FVector Location = FConversions::ROSToU(ObjectState.GetPose().GetPosition().GetVector());
 		const FQuat Rotation = FConversions::ROSToU(ObjectState.GetPose().GetOrientation().GetQuat());
 		Object->SetActorLocationAndRotation(Location, Rotation);
-		
+
 		UStaticMeshComponent *StaticMeshComponent = Object->GetStaticMeshComponent();
 		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
 		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(Object->GetActorRotation().RotateVector(ObjectState.GetVelocity().GetAngular().GetVector()) * FVector(-1, 1, -1));
@@ -224,8 +224,18 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									}
 								}
 							}
-							StaticMeshComponent->SetMobility(EComponentMobility::Movable);
-							StaticMeshComponent->SetSimulatePhysics(true);
+							if (ObjectStatus.GetInfo().GetMovable())
+							{
+								StaticMeshComponent->SetMobility(EComponentMobility::Movable);
+								StaticMeshComponent->SetSimulatePhysics(true);
+							}
+							else
+							{
+								StaticMeshComponent->SetMobility(EComponentMobility::Static);
+								StaticMeshComponent->SetSimulatePhysics(false);
+							}
+							
+							StaticMeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 							StaticMeshComponent->SetGenerateOverlapEvents(true);
 							StaticMeshComponent->RegisterComponent();
 

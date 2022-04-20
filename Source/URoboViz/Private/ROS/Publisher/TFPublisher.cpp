@@ -4,6 +4,8 @@
 #include "Conversions.h"
 #include "Engine/StaticMeshActor.h"
 #include "Kismet/GameplayStatics.h"
+#include "ObjectController.h"
+#include "RoboManager.h"
 #include "tf2_msgs/TFMessage.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTFPublisher, Log, All)
@@ -16,14 +18,24 @@ UTFPublisher::UTFPublisher()
 
 void UTFPublisher::Publish()
 {
+  if (GetRoboManager() == nullptr || GetRoboManager()->GetObjectController() == nullptr)
+  {
+    UE_LOG(LogTFPublisher, Error, TEXT("RoboManager of %s not found"), *GetName())
+    return;
+  }
+
+  if (GetRoboManager()->GetObjectController()->GetObjectsInUnreal().Num() == 0)
+  {
+    return;
+  }
+
   TSharedPtr<tf2_msgs::TFMessage> TfMessage =
       MakeShareable(new tf2_msgs::TFMessage());
 
   geometry_msgs::Transform ObjectTransfMsg;
   geometry_msgs::TransformStamped ObjectFrame;
 
-  UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), AStaticMeshActor::StaticClass(), TEXT("tf"), Objects);
-  for (AActor *const Object : Objects)
+  for (AActor *const Object : GetRoboManager()->GetObjectController()->GetObjectsInUnreal())
   {
     ObjectFrame.SetHeader(std_msgs::Header(Seq, FROSTime(), FrameId));
     ObjectFrame.SetChildFrameId(Object->GetName());

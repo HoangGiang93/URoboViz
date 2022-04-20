@@ -79,6 +79,14 @@ void UObjectController::Tick(float DeltaTime)
 			DrawDebugString(GetWorld(), TextLocation, AngularVelocityText, Object, FColor::Cyan, DeltaTime, false, 0.5f);
 		}
 	}
+	
+	ObjectsInMujoco = ObjectsInMujoco.Union(ObjectsToAddInMujoco);
+	ObjectsToAddInMujoco.Empty();
+	for (AStaticMeshActor *const &Object : ObjectsToRemoveInMujoco)
+	{
+		ObjectsInMujoco.Remove(Object);
+	}
+	ObjectsToRemoveInMujoco.Empty();
 }
 
 AStaticMeshActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
@@ -108,13 +116,13 @@ AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName
 void UObjectController::AddObjectInMujoco(AStaticMeshActor *const Object)
 {
 	Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
-	ObjectsInMujoco.Add(Object);
+	ObjectsToAddInMujoco.Add(Object);
 }
 
 void UObjectController::RemoveObjectInMujoco(AStaticMeshActor *const Object)
 {
 	Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
-	ObjectsInMujoco.Remove(Object);
+	ObjectsToRemoveInMujoco.Add(Object);
 }
 
 void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus)
@@ -122,6 +130,24 @@ void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoc
 	if (Object != nullptr)
 	{
 		Object->SetActorTransform(FConversions::ROSToU(GetTransform(ObjectStatus)));
+	}
+	else
+	{
+		UE_LOG(LogObjectController, Error, TEXT("Object is nullptr"))
+	}
+}
+
+void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState)
+{
+	if (Object != nullptr)
+	{
+		const FVector Location = FConversions::ROSToU(ObjectState.GetPose().GetPosition().GetVector());
+		const FQuat Rotation = FConversions::ROSToU(ObjectState.GetPose().GetOrientation().GetQuat());
+		Object->SetActorLocationAndRotation(Location, Rotation);
+		
+		UStaticMeshComponent *StaticMeshComponent = Object->GetStaticMeshComponent();
+		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
+		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(Object->GetActorRotation().RotateVector(ObjectState.GetVelocity().GetAngular().GetVector()) * FVector(-1, 1, -1));
 	}
 	else
 	{
@@ -157,22 +183,27 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							StaticMeshComponent->UnregisterComponent();
 
 							FString MeshPath;
+							FString MeshTypeString;
 							switch (ObjectStatus.GetInfo().GetType())
 							{
 							case mujoco_msgs::ObjectInfo::CUBE:
 								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Cube.SM_Cube'");
+								MeshTypeString = TEXT("Cube");
 								break;
 
 							case mujoco_msgs::ObjectInfo::SPHERE:
 								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Sphere.SM_Sphere'");
+								MeshTypeString = TEXT("Sphere");
 								break;
 
 							case mujoco_msgs::ObjectInfo::CYLINDER:
 								MeshPath = TEXT("StaticMesh'/URoboViz/Assets/StaticMeshes/SM_Cylinder.SM_Cylinder'");
+								MeshTypeString = TEXT("Cylinder");
 								break;
 
 							case mujoco_msgs::ObjectInfo::MESH:
 								MeshPath = TEXT("StaticMesh'") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
+								MeshTypeString = TEXT("Mesh");
 								break;
 
 							default:
@@ -198,7 +229,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							StaticMeshComponent->SetGenerateOverlapEvents(true);
 							StaticMeshComponent->RegisterComponent();
 
-							Object->Tags.Add(TEXT("tf")); 
+							Object->Tags.Add(*MeshTypeString); 
 							
 							ObjectsInUnreal.Add(Object); });
 }

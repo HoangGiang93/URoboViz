@@ -36,8 +36,14 @@ void USpawnObjectClient::CreateServiceClient()
   Response = MakeShareable(new mujoco_srvs::SpawnObject::Response());
 }
 
-void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
+void USpawnObjectClient::Tick()
 {
+  if (GetRoboManager()->GetObjectController() == nullptr || GetRoboManager()->GetObjectController()->GetObjectsToAddInMujoco().Num() == 0)
+  {
+    return;
+  }
+  const TSet<AStaticMeshActor *> Objects = GetRoboManager()->GetObjectController()->GetObjectsToAddInMujoco();
+
   static TMap<FString, mujoco_msgs::ObjectInfo::EType> TypeMap =
       {
           {TEXT("Cube"), mujoco_msgs::ObjectInfo::CUBE},
@@ -46,18 +52,13 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
 
   TArray<mujoco_msgs::ObjectStatus> ObjectStatusArray;
   ObjectStatusArray.Reserve(Objects.Num());
-  std_msgs::Header Header(Seq++, FROSTime(), FrameId);
+  const std_msgs::Header Header(Seq++, FROSTime(), FrameId);
 
-  bool bShouldCallService = false;
   for (AStaticMeshActor *const Object : Objects)
   {
     if (Object != nullptr &&
-        Object->GetStaticMeshComponent() != nullptr &&
-        GetRoboManager()->GetObjectController() != nullptr &&
-        GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) == nullptr)
+        Object->GetStaticMeshComponent() != nullptr)
     {
-      bShouldCallService = true;
-
       mujoco_msgs::ObjectStatus ObjectStatus;
       mujoco_msgs::ObjectInfo ObjectInfo;
       geometry_msgs::Pose Pose;
@@ -88,7 +89,7 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       case EComponentMobility::Movable:
         ObjectInfo.SetMovable(true);
         break;
-      
+
       default:
         break;
       }
@@ -111,19 +112,16 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
       ObjectInfo.SetInertial(Inertial);
       FString Mesh = Object->GetStaticMeshComponent()->GetStaticMesh()->GetName();
       Mesh.RemoveFromStart(TEXT("SM_"));
-      Mesh.Append(TEXT(".xml"));
       ObjectInfo.SetMesh(Mesh);
       ObjectStatus.SetInfo(ObjectInfo);
 
       Pose.SetPosition(FConversions::UToROS(Object->GetActorLocation()));
       Pose.SetOrientation(FConversions::UToROS(Object->GetActorRotation().Quaternion()));
       ObjectStatus.SetPose(Pose);
-      
+
       Velocity.SetLinear(FConversions::UToROS(Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity()));
       Velocity.SetAngular(Object->GetActorRotation().UnrotateVector(Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians()) * FVector(-1, 1, -1));
       ObjectStatus.SetVelocity(Velocity);
-
-      GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);
 
       ObjectStatusArray.Add(ObjectStatus);
     }
@@ -131,17 +129,19 @@ void USpawnObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
 
   StaticCastSharedPtr<mujoco_srvs::SpawnObject::Request>(Request)->SetObjects(ObjectStatusArray);
 
-  if (bShouldCallService)
-  {
-    Super::CallService();
-  }
+  Super::CallService();
 }
 
 void USpawnObjectClient::OnBeginOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
+  if (GetRoboManager()->GetObjectController() == nullptr)
+  {
+    return;
+  }
+  
   if (AStaticMeshActor *const Object = Cast<AStaticMeshActor>(OtherActor))
   {
-    CallService({Object});
+    GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);
   }
 }
 
@@ -151,4 +151,5 @@ FSpawnObjectClientCallback::FSpawnObjectClientCallback(const FString &InServiceN
 
 void FSpawnObjectClientCallback::Callback(TSharedPtr<FROSBridgeSrv::SrvResponse> InResponse)
 {
+  
 }

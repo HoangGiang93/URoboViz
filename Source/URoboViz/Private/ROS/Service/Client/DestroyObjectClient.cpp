@@ -42,8 +42,15 @@ void UDestroyObjectClient::CreateServiceClient()
   Response = MakeShareable(new mujoco_srvs::DestroyObject::Response());
 }
 
-void UDestroyObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
+void UDestroyObjectClient::Tick()
 {
+  if (GetRoboManager()->GetObjectController() == nullptr || GetRoboManager()->GetObjectController()->GetObjectsToRemoveInMujoco().Num() == 0)
+  {
+    return;
+  }
+
+  const TSet<AStaticMeshActor *> Objects = GetRoboManager()->GetObjectController()->GetObjectsToRemoveInMujoco();
+
   TArray<FString> ObjectNames;
   ObjectNames.Reserve(Objects.Num());
   for (AStaticMeshActor *const Object : Objects)
@@ -64,6 +71,11 @@ void UDestroyObjectClient::CallService(const TSet<AStaticMeshActor *> &Objects)
 
 void UDestroyObjectClient::OnEndOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
+  if (GetRoboManager()->GetObjectController() == nullptr)
+  {
+    return;
+  }
+
   if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(OtherActor))
   {
     TSet<AActor *> OverlappingActors;
@@ -72,7 +84,7 @@ void UDestroyObjectClient::OnEndOverlap(AActor *OverlappedActor, AActor *OtherAc
       return Cast<ATriggerBase>(Actor) != nullptr;
     }) || OverlappingActors.Num() == 0)
     {
-      CallService({Object});
+      GetRoboManager()->GetObjectController()->RemoveObjectInMujoco(Object);
     }
   }
 }
@@ -93,7 +105,7 @@ void FDestroyObjectClientCallback::Callback(TSharedPtr<FROSBridgeSrv::SrvRespons
   {
     if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectState.GetName()))
     {
-      ObjectController->DestroyObjectInMujoco(Object, ObjectState);
+      ObjectController->MoveObjectByMujoco(Object, ObjectState);
     }
   }
 }

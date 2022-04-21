@@ -15,13 +15,13 @@ class UROBOVIZ_API USpawnObjectClient : public UROSServiceClient
 public:
   USpawnObjectClient();
 
+public:
+  void Tick() override;
+
 protected:
   void Init() override;
 
   void CreateServiceClient() override;
-
-public:
-  void CallService(const TSet<class AStaticMeshActor *> &Objects);
 
 private:
   UFUNCTION()

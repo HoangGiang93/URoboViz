@@ -35,6 +35,10 @@ public:
 
 	TSet<AStaticMeshActor *> GetObjectsInUnreal() const { return ObjectsInUnreal; }
 
+	TSet<AStaticMeshActor *> GetObjectsToAddInMujoco() const { return ObjectsToAddInMujoco; }
+
+	TSet<AStaticMeshActor *> GetObjectsToRemoveInMujoco() const { return ObjectsToRemoveInMujoco; }
+
 	void AddObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
 
 	void RemoveObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
@@ -48,8 +52,6 @@ public:
 	void MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState);
 
 	void MoveObjectByMarker(AStaticMeshActor *Object, const visualization_msgs::Marker &ObjectMarker);
-
-	void DestroyObjectInMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState);
 
 public:
 	UPROPERTY(EditAnywhere)

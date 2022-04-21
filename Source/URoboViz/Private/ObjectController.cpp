@@ -258,14 +258,3 @@ bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatu
 	}
 	return false;
 }
-
-void UObjectController::DestroyObjectInMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState)
-{
-	RemoveObjectInMujoco(Object);
-	if (Object != nullptr && Object->GetStaticMeshComponent() != nullptr)
-	{
-		UStaticMeshComponent *StaticMeshComponent = Object->GetStaticMeshComponent();
-		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
-		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(Object->GetActorRotation().RotateVector(ObjectState.GetVelocity().GetAngular().GetVector()) * FVector(-1, 1, -1));
-	}
-}

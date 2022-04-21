@@ -49,7 +49,7 @@ TSharedPtr<FROSBridgeMsg> FBasePoseSubscriberCallback::ParseMessage(TSharedPtr<F
 
 void FBasePoseSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
 {
-  if (BaseController)
+  if (BaseController != nullptr)
   {
     TSharedPtr<geometry_msgs::TransformStamped> BasePose = StaticCastSharedPtr<geometry_msgs::TransformStamped>(Msg);
 

@@ -16,14 +16,14 @@ class UROBOVIZ_API UDestroyObjectClient : public UROSServiceClient
 
 public:
   UDestroyObjectClient();
-  
+
+public:
+  void Tick() override;
+
 protected:
   void Init() override;
 
   void CreateServiceClient() override;
-
-public:
-  void CallService(const TSet<class AStaticMeshActor *> &Objects);
 
 private:
   UFUNCTION()

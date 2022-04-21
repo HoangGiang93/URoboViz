@@ -98,4 +98,28 @@ void FROSManagerContainer::Tick()
 		}
 		ROSPublisher->Tick();
 	}
+	for (UROSSubscriber *ROSSubscriber : ROSSubscribers)
+	{
+		if (ROSSubscriber == nullptr)
+		{
+			continue;
+		}
+		ROSSubscriber->Tick();
+	}
+	for (UROSServiceServer *ROSServiceServer : ROSServiceServers)
+	{
+		if (ROSServiceServer == nullptr)
+		{
+			continue;
+		}
+		ROSServiceServer->Tick();
+	}
+	for (UROSServiceClient *ROSServiceClient : ROSServiceClients)
+	{
+		if (ROSServiceClient == nullptr)
+		{
+			continue;
+		}
+		ROSServiceClient->Tick();
+	}
 }

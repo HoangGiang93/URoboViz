@@ -2,14 +2,14 @@
 
 #include "ROS/Subscriber/BasePoseSubscriber.h"
 #include "Controllers/BaseController.h"
-#include "geometry_msgs/TransformStamped.h"
+#include "nav_msgs/Odometry.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBasePoseSubscriber, Log, All)
 
 UBasePoseSubscriber::UBasePoseSubscriber()
 {
   CommonSubscriberParameters.Topic = TEXT("/base_footprint");
-  CommonSubscriberParameters.MessageType = TEXT("geometry_msgs/TransformStamped");
+  CommonSubscriberParameters.MessageType = TEXT("nav_msgs/Odometry");
 }
 
 void UBasePoseSubscriber::CreateSubscriber()
@@ -39,8 +39,8 @@ FBasePoseSubscriberCallback::FBasePoseSubscriberCallback(
 
 TSharedPtr<FROSBridgeMsg> FBasePoseSubscriberCallback::ParseMessage(TSharedPtr<FJsonObject> JsonObject) const
 {
-  TSharedPtr<geometry_msgs::TransformStamped> BasePose =
-      MakeShareable<geometry_msgs::TransformStamped>(new geometry_msgs::TransformStamped());
+  TSharedPtr<nav_msgs::Odometry> BasePose =
+      MakeShareable<nav_msgs::Odometry>(new nav_msgs::Odometry());
 
   BasePose->FromJson(JsonObject);
 
@@ -51,10 +51,10 @@ void FBasePoseSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
 {
   if (BaseController != nullptr)
   {
-    TSharedPtr<geometry_msgs::TransformStamped> BasePose = StaticCastSharedPtr<geometry_msgs::TransformStamped>(Msg);
+    TSharedPtr<nav_msgs::Odometry> BasePose = StaticCastSharedPtr<nav_msgs::Odometry>(Msg);
 
-    FVector BaseLocation = BasePose->GetTransform().GetTranslation().GetVector();
-    FQuat BaseRotation = BasePose->GetTransform().GetRotation().GetQuat();
+    FVector BaseLocation = BasePose->GetPose().GetPose().GetPosition().GetVector();
+    FQuat BaseRotation = BasePose->GetPose().GetPose().GetOrientation().GetQuat();
 
     BaseController->SetDesiredBasePoseFromROS(BaseLocation, BaseRotation);
   }

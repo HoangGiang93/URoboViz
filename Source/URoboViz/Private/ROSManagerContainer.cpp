@@ -27,7 +27,7 @@ void FROSManagerContainer::Init()
 		{
 			continue;
 		}
-		ROSSubscriber->Connect(Handler);
+		ROSSubscriber->Connect(Host, Port);
 	}
 	for (UROSServiceServer *ROSServiceServer : ROSServiceServers)
 	{
@@ -43,7 +43,7 @@ void FROSManagerContainer::Init()
 		{
 			continue;
 		}
-		ROSServiceClient->Connect(Handler);
+		ROSServiceClient->Connect(Host, Port);
 	}
 }
 

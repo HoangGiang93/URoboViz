@@ -33,15 +33,13 @@ public:
 
 	AStaticMeshActor *GetObjectInUnreal(const FString &ObjectName) const;
 
+	TSet<AStaticMeshActor *> GetObjectsInMujoco() const { return ObjectsInMujoco; }
+
 	TSet<AStaticMeshActor *> GetObjectsInUnreal() const { return ObjectsInUnreal; }
 
-	TSet<AStaticMeshActor *> GetObjectsToAddInMujoco() const { return ObjectsToAddInMujoco; }
+	void AddObjectsInMujoco(const TSet<AStaticMeshActor *> &Objects);
 
-	TSet<AStaticMeshActor *> GetObjectsToRemoveInMujoco() const { return ObjectsToRemoveInMujoco; }
-
-	void AddObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
-
-	void RemoveObjectInMujoco(AStaticMeshActor *const ObjectStaticMesh);
+	void RemoveObjectInMujoco(const TSet<AStaticMeshActor *> &Objects);
 
 	void SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus);
 
@@ -68,9 +66,5 @@ private:
 	TSet<AStaticMeshActor *> ObjectsInUnreal;
 
 private:
-	TSet<AStaticMeshActor *> ObjectsToAddInMujoco;
-
-	TSet<AStaticMeshActor *> ObjectsToRemoveInMujoco;
-
 	TMap<FLinearColor, FString> ColorMap;
 };

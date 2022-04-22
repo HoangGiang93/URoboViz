@@ -10,7 +10,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogSpawnObjectServer, Log, All)
 
 USpawnObjectServer::USpawnObjectServer()
 {
-  CommonServiceServerParameters.ServiceName = TEXT("/spawn_objects");
+  CommonServiceServerParameters.ServiceName = TEXT("/unreal/spawn_objects");
   CommonServiceServerParameters.ServiceType = TEXT("mujoco_msgs/SpawnObject");
 }
 
@@ -45,15 +45,22 @@ TSharedPtr<FROSBridgeSrv::SrvResponse> FSpawnObjectServerCallback::Callback(TSha
       StaticCastSharedPtr<mujoco_srvs::SpawnObject::Request>(InRequest);
   if (ObjectController == nullptr)
   {
-    return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(false));
+    return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response());
   }
 
   bool bSuccess = true;
   TArray<mujoco_msgs::ObjectStatus> Objects = Request->GetObjects();
+  TArray<FString> ObjectNames;
+  ObjectNames.Reserve(Objects.Num());
   for (const mujoco_msgs::ObjectStatus &Object : Objects)
   {    
     bSuccess = bSuccess && ObjectController->SpawnOrMoveObjectByMujoco(Object);
+    ObjectNames.Add(Object.GetInfo().GetName());
   }
-
-  return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(bSuccess));
+  
+  if (bSuccess)
+  {
+    return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(ObjectNames));
+  }
+  return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response());
 }

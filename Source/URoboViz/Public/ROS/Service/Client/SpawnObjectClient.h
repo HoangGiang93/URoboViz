@@ -7,6 +7,8 @@
 #include "SpawnObjectClient.generated.h"
 // clang-format on
 
+class UObjectController;
+
 UCLASS()
 class UROBOVIZ_API USpawnObjectClient : public UROSServiceClient
 {
@@ -29,9 +31,6 @@ private:
 
 public:
   UPROPERTY(EditAnywhere)
-  FString FrameId = TEXT("");
-
-  UPROPERTY(EditAnywhere)
   TSet<class ATriggerBase *> TriggerBases;
 
 private:
@@ -41,7 +40,10 @@ private:
 class FSpawnObjectClientCallback : public FROSBridgeSrvClient
 {
 public:
-  FSpawnObjectClientCallback(const FString &InServiceName, const FString &InServiceType);
+  FSpawnObjectClientCallback(const FString &InServiceName, const FString &InServiceType, UObjectController *InObjectController);
 
   void Callback(TSharedPtr<FROSBridgeSrv::SrvResponse> InResponse) override;
+
+private:
+  UObjectController *ObjectController;
 };

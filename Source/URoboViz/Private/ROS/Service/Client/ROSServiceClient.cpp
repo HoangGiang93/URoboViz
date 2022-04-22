@@ -17,3 +17,11 @@ void UROSServiceClient::CallService()
     Handler->CallService(ServiceClient, Request, Response);
   }
 }
+
+void UROSServiceClient::Tick()
+{
+  if (Handler.IsValid())
+	{
+		Handler->Process();
+	}
+}

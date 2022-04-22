@@ -10,6 +10,8 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogDestroyObjectClient, Log, All)
 
+TSet<AStaticMeshActor *> ObjectsToDestroyInMujoco;
+
 UDestroyObjectClient::UDestroyObjectClient()
 {
   CommonServiceClientParameters.ServiceName = TEXT("/mujoco/destroy_objects");
@@ -44,47 +46,45 @@ void UDestroyObjectClient::CreateServiceClient()
 
 void UDestroyObjectClient::Tick()
 {
-  if (GetRoboManager()->GetObjectController() == nullptr || GetRoboManager()->GetObjectController()->GetObjectsToRemoveInMujoco().Num() == 0)
+  if (ObjectsToDestroyInMujoco.Num() == 0 || GetRoboManager() == nullptr || GetRoboManager()->GetObjectController() == nullptr)
   {
     return;
   }
 
-  const TSet<AStaticMeshActor *> Objects = GetRoboManager()->GetObjectController()->GetObjectsToRemoveInMujoco();
-
   TArray<FString> ObjectNames;
-  ObjectNames.Reserve(Objects.Num());
-  for (AStaticMeshActor *const Object : Objects)
+  ObjectNames.Reserve(ObjectsToDestroyInMujoco.Num());
+  for (AStaticMeshActor *const Object : ObjectsToDestroyInMujoco)
   {
     if (Object != nullptr &&
-        GetRoboManager() != nullptr &&
-        GetRoboManager()->GetObjectController() != nullptr &&
         GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) != nullptr)
     {
-      GetRoboManager()->GetObjectController()->RemoveObjectInMujoco(Object);
       ObjectNames.Add(Object->GetName());
     }
   }
+
   StaticCastSharedPtr<mujoco_srvs::DestroyObject::Request>(Request)->SetNames(ObjectNames);
 
   Super::CallService();
+
+  GetRoboManager()->GetObjectController()->RemoveObjectInMujoco(ObjectsToDestroyInMujoco);
+  ObjectsToDestroyInMujoco.Empty();
 }
 
 void UDestroyObjectClient::OnEndOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
-  if (GetRoboManager()->GetObjectController() == nullptr)
-  {
-    return;
-  }
-
   if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(OtherActor))
   {
     TSet<AActor *> OverlappingActors;
     Object->GetOverlappingActors(OverlappingActors);
-    if (!OverlappingActors.Array().ContainsByPredicate([&](const AActor *const Actor){   
-      return Cast<ATriggerBase>(Actor) != nullptr;
-    }) || OverlappingActors.Num() == 0)
+    if (!OverlappingActors.Array().ContainsByPredicate([&](const AActor *const Actor)
+                                                       { return Cast<ATriggerBase>(Actor) != nullptr; }) ||
+        OverlappingActors.Num() == 0)
     {
-      GetRoboManager()->GetObjectController()->RemoveObjectInMujoco(Object);
+      if (Object->GetStaticMeshComponent()->Mobility == EComponentMobility::Movable)
+      {
+        Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
+      }
+      ObjectsToDestroyInMujoco.Add(Object);
     }
   }
 }

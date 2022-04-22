@@ -12,6 +12,15 @@ void UROSBase::Connect(const TSharedPtr<FROSBridgeHandler> &InHandler)
   Init();
 }
 
+void UROSBase::Connect(const FString &Host, const int32 Port)
+{
+  Handler = MakeShareable<FROSBridgeHandler>(new FROSBridgeHandler(Host, Port));
+
+  Handler->Connect();
+
+  Init();
+}
+
 void UROSBase::Init()
 {
   if (ARoboManager *Outer = Cast<ARoboManager>(GetOuter()))

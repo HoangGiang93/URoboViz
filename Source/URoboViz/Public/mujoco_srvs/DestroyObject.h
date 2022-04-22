@@ -32,10 +32,10 @@ namespace mujoco_srvs
 			virtual void FromJson(TSharedPtr<FJsonObject> JsonObject) override
 			{
 				TArray<TSharedPtr<FJsonValue>> NamePtrArray = JsonObject->GetArrayField(TEXT("names"));
+				Names.Empty();
 				for (const TSharedPtr<FJsonValue> &NamePtr : NamePtrArray)
 				{
-					FString Name = NamePtr->AsString();
-					Names.Add(Name);
+					Names.Add(NamePtr->AsString());
 				}
 			}
 
@@ -61,15 +61,15 @@ namespace mujoco_srvs
 
 			virtual TSharedPtr<FJsonObject> ToJsonObject() const
 			{
-				TSharedPtr<FJsonObject> Object = MakeShareable<FJsonObject>(new FJsonObject());
+				TSharedPtr<FJsonObject> NamesJsonObject = MakeShareable<FJsonObject>(new FJsonObject());
 				TArray<TSharedPtr<FJsonValue>> NamesPtrArray;
 				for (const FString &Name : Names)
 				{
 					TSharedPtr<FJsonValue> NamePtr = MakeShareable(new FJsonValueString(Name));
 					NamesPtrArray.Add(NamePtr);
 				}
-				Object->SetArrayField(TEXT("names"), NamesPtrArray);
-				return Object;
+				NamesJsonObject->SetArrayField(TEXT("names"), NamesPtrArray);
+				return NamesJsonObject;
 			}
 		};
 

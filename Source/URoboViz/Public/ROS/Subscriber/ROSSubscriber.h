@@ -25,6 +25,9 @@ class UROBOVIZ_API UROSSubscriber : public UROSBase
 {
   GENERATED_BODY()
 
+public:
+  void Tick() override;
+
 protected:
   virtual void Init() override;
 

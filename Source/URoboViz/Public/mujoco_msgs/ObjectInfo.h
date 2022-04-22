@@ -108,23 +108,15 @@ namespace mujoco_msgs
 
     virtual TSharedPtr<FJsonObject> ToJsonObject() const override
     {
-      TSharedPtr<FJsonObject> Object = MakeShareable<FJsonObject>(new FJsonObject());
-      Object->SetStringField(TEXT("name"), Name);
-      Object->SetNumberField(TEXT("type"), Type);
-      Object->SetBoolField(TEXT("movable"), Movable);
-      Object->SetObjectField(TEXT("size"), Size.ToJsonObject());
-      Object->SetObjectField(TEXT("rgba"), Rgba.ToJsonObject());
-      Object->SetObjectField(TEXT("inertial"), Inertial.ToJsonObject());
-      Object->SetStringField(TEXT("mesh"), Mesh);
-      return Object;
-    }
-
-    virtual FString ToYamlString() const override
-    {
-      FString OutputString;
-      TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
-      FJsonSerializer::Serialize(ToJsonObject().ToSharedRef(), Writer);
-      return OutputString;
+      TSharedPtr<FJsonObject> ObjectInfoJsonObject = MakeShareable<FJsonObject>(new FJsonObject());
+      ObjectInfoJsonObject->SetStringField(TEXT("name"), Name);
+      ObjectInfoJsonObject->SetNumberField(TEXT("type"), Type);
+      ObjectInfoJsonObject->SetBoolField(TEXT("movable"), Movable);
+      ObjectInfoJsonObject->SetObjectField(TEXT("size"), Size.ToJsonObject());
+      ObjectInfoJsonObject->SetObjectField(TEXT("rgba"), Rgba.ToJsonObject());
+      ObjectInfoJsonObject->SetObjectField(TEXT("inertial"), Inertial.ToJsonObject());
+      ObjectInfoJsonObject->SetStringField(TEXT("mesh"), Mesh);
+      return ObjectInfoJsonObject;
     }
   };
 } // namespace mujoco_msgs

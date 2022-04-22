@@ -79,21 +79,13 @@ void UObjectController::Tick(float DeltaTime)
 			DrawDebugString(GetWorld(), TextLocation, AngularVelocityText, Object, FColor::Cyan, DeltaTime, false, 0.5f);
 		}
 	}
-
-	ObjectsInMujoco = ObjectsInMujoco.Union(ObjectsToAddInMujoco);
-	ObjectsToAddInMujoco.Empty();
-	for (AStaticMeshActor *const &Object : ObjectsToRemoveInMujoco)
-	{
-		ObjectsInMujoco.Remove(Object);
-	}
-	ObjectsToRemoveInMujoco.Empty();
 }
 
 AStaticMeshActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
 {
 	for (AStaticMeshActor *const &Object : ObjectsInMujoco)
 	{
-		if (Object->GetName().Compare(ObjectName) == 0)
+		if (Object != nullptr && Object->GetName().Compare(ObjectName) == 0)
 		{
 			return Object;
 		}
@@ -105,7 +97,7 @@ AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName
 {
 	for (AStaticMeshActor *const &Object : ObjectsInUnreal)
 	{
-		if (Object->GetName().Compare(ObjectName) == 0)
+		if (Object != nullptr && Object->GetName().Compare(ObjectName) == 0)
 		{
 			return Object;
 		}
@@ -113,16 +105,17 @@ AStaticMeshActor *UObjectController::GetObjectInUnreal(const FString &ObjectName
 	return nullptr;
 }
 
-void UObjectController::AddObjectInMujoco(AStaticMeshActor *const Object)
+void UObjectController::AddObjectsInMujoco(const TSet<AStaticMeshActor *> &Objects)
 {
-	Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
-	ObjectsToAddInMujoco.Add(Object);
+	ObjectsInMujoco = ObjectsInMujoco.Union(Objects);
 }
 
-void UObjectController::RemoveObjectInMujoco(AStaticMeshActor *const Object)
+void UObjectController::RemoveObjectInMujoco(const TSet<AStaticMeshActor *> &Objects)
 {
-	Object->GetStaticMeshComponent()->SetSimulatePhysics(true);
-	ObjectsToRemoveInMujoco.Add(Object);
+	for (AStaticMeshActor *const &Object : Objects)
+	{
+		ObjectsInMujoco.Remove(Object);
+	}
 }
 
 void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus)
@@ -143,9 +136,16 @@ void UObjectController::MoveObjectByMujoco(AStaticMeshActor *Object, const mujoc
 	{
 		const FVector Location = FConversions::ROSToU(ObjectState.GetPose().GetPosition().GetVector());
 		const FQuat Rotation = FConversions::ROSToU(ObjectState.GetPose().GetOrientation().GetQuat());
-		Object->SetActorLocationAndRotation(Location, Rotation);
+		if (!Object->GetActorLocation().Equals(Location) || !Object->GetActorRotation().Equals(Rotation.Rotator()))
+		{
+			Object->SetActorLocationAndRotation(Location, Rotation);
+		}
 
 		UStaticMeshComponent *StaticMeshComponent = Object->GetStaticMeshComponent();
+		if (StaticMeshComponent->Mobility == EComponentMobility::Static)
+		{
+			return;
+		}
 		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
 		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(Object->GetActorRotation().RotateVector(ObjectState.GetVelocity().GetAngular().GetVector()) * FVector(-1, 1, -1));
 	}

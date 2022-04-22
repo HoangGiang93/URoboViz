@@ -10,6 +10,8 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogSpawnObjectClient, Log, All)
 
+TSet<AStaticMeshActor *> ObjectsToSpawnInMujoco;
+
 USpawnObjectClient::USpawnObjectClient()
 {
   CommonServiceClientParameters.ServiceName = TEXT("/mujoco/spawn_objects");
@@ -31,18 +33,23 @@ void USpawnObjectClient::Init()
 
 void USpawnObjectClient::CreateServiceClient()
 {
-  ServiceClient = MakeShareable<FSpawnObjectClientCallback>(new FSpawnObjectClientCallback(CommonServiceClientParameters.ServiceName, CommonServiceClientParameters.ServiceType));
+  if (GetRoboManager() == nullptr)
+  {
+    UE_LOG(LogSpawnObjectClient, Warning, TEXT("RoboManager of %s not found"), *GetName())
+    return;
+  }
+
+  ServiceClient = MakeShareable<FSpawnObjectClientCallback>(new FSpawnObjectClientCallback(CommonServiceClientParameters.ServiceName, CommonServiceClientParameters.ServiceType, GetRoboManager()->GetObjectController()));
   Request = MakeShareable(new mujoco_srvs::SpawnObject::Request());
   Response = MakeShareable(new mujoco_srvs::SpawnObject::Response());
 }
 
 void USpawnObjectClient::Tick()
 {
-  if (GetRoboManager()->GetObjectController() == nullptr || GetRoboManager()->GetObjectController()->GetObjectsToAddInMujoco().Num() == 0)
+  if (ObjectsToSpawnInMujoco.Num() == 0 || GetRoboManager() == nullptr || GetRoboManager()->GetObjectController() == nullptr)
   {
     return;
   }
-  const TSet<AStaticMeshActor *> Objects = GetRoboManager()->GetObjectController()->GetObjectsToAddInMujoco();
 
   static TMap<FString, mujoco_msgs::ObjectInfo::EType> TypeMap =
       {
@@ -51,20 +58,17 @@ void USpawnObjectClient::Tick()
           {TEXT("Sphere"), mujoco_msgs::ObjectInfo::SPHERE}};
 
   TArray<mujoco_msgs::ObjectStatus> ObjectStatusArray;
-  ObjectStatusArray.Reserve(Objects.Num());
-  const std_msgs::Header Header(Seq++, FROSTime(), FrameId);
-
-  for (AStaticMeshActor *const Object : Objects)
+  ObjectStatusArray.Reserve(ObjectsToSpawnInMujoco.Num());
+  for (AStaticMeshActor *const Object : ObjectsToSpawnInMujoco)
   {
     if (Object != nullptr &&
-        Object->GetStaticMeshComponent() != nullptr)
+        Object->GetStaticMeshComponent() != nullptr &&
+        GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) == nullptr)
     {
       mujoco_msgs::ObjectStatus ObjectStatus;
       mujoco_msgs::ObjectInfo ObjectInfo;
       geometry_msgs::Pose Pose;
       geometry_msgs::Twist Velocity;
-
-      ObjectStatus.SetHeader(Header);
 
       ObjectInfo.SetName(Object->GetName());
       ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
@@ -95,7 +99,7 @@ void USpawnObjectClient::Tick()
       }
       ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
       FLinearColor Color(1.f, 1.f, 1.f, 1.f);
-      if (Object->GetStaticMeshComponent() != nullptr && Object->GetStaticMeshComponent()->GetMaterial(0))
+      if (Object->GetStaticMeshComponent()->GetMaterial(0) != nullptr)
       {
         Object->GetStaticMeshComponent()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
       }
@@ -130,26 +134,39 @@ void USpawnObjectClient::Tick()
   StaticCastSharedPtr<mujoco_srvs::SpawnObject::Request>(Request)->SetObjects(ObjectStatusArray);
 
   Super::CallService();
+
+  GetRoboManager()->GetObjectController()->AddObjectsInMujoco(ObjectsToSpawnInMujoco);
+  ObjectsToSpawnInMujoco.Empty();
 }
 
 void USpawnObjectClient::OnBeginOverlap(AActor *OverlappedActor, AActor *OtherActor)
 {
-  if (GetRoboManager()->GetObjectController() == nullptr)
-  {
-    return;
-  }
-  
   if (AStaticMeshActor *const Object = Cast<AStaticMeshActor>(OtherActor))
   {
-    GetRoboManager()->GetObjectController()->AddObjectInMujoco(Object);
+    ObjectsToSpawnInMujoco.Add(Object);
   }
 }
 
-FSpawnObjectClientCallback::FSpawnObjectClientCallback(const FString &InServiceName, const FString &InServiceType) : FROSBridgeSrvClient(InServiceName, InServiceType)
+FSpawnObjectClientCallback::FSpawnObjectClientCallback(const FString &InServiceName, const FString &InServiceType, UObjectController *InObjectController) : FROSBridgeSrvClient(InServiceName, InServiceType)
 {
+  ObjectController = InObjectController;
 }
 
 void FSpawnObjectClientCallback::Callback(TSharedPtr<FROSBridgeSrv::SrvResponse> InResponse)
 {
-  
+  if (ObjectController == nullptr)
+  {
+    return;
+  }
+
+  for (const FString &ObjectName : StaticCastSharedPtr<mujoco_srvs::SpawnObject::Response>(InResponse)->GetNames())
+  {
+    if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectName))
+    {
+      if (Object->GetStaticMeshComponent()->Mobility == EComponentMobility::Movable)
+      {
+        Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
+      }
+    }
+  }
 }

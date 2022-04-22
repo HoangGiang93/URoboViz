@@ -15,7 +15,6 @@ namespace mujoco_msgs
   class ObjectState : public FROSBridgeMsg
   {
   private:
-    std_msgs::Header Header;
     FString Name;
     geometry_msgs::Pose Pose;
     geometry_msgs::Twist Velocity;
@@ -26,19 +25,14 @@ namespace mujoco_msgs
       MsgType = "mujoco_msgs/ObjectState";
     }
 
-    ObjectState(const std_msgs::Header &InHeader,
-                const FString &InName,
+    ObjectState(const FString &InName,
                 const geometry_msgs::Pose &InPose,
-                const geometry_msgs::Twist &InVelocity) : Header(InHeader), Name(InName), Pose(InPose), Velocity(InVelocity)
+                const geometry_msgs::Twist &InVelocity) : Name(InName), Pose(InPose), Velocity(InVelocity)
     {
       MsgType = "mujoco_msgs/ObjectState";
     }
 
     ~ObjectState() override {}
-
-    std_msgs::Header GetHeader() const { return Header; }
-
-    void SetHeader(const std_msgs::Header &InHeader) { Header = InHeader; }
 
     FString GetName() const { return Name; }
 
@@ -54,7 +48,6 @@ namespace mujoco_msgs
 
     virtual void FromJson(TSharedPtr<FJsonObject> JsonObject) override
     {
-      Header = std_msgs::Header::GetFromJson(JsonObject->GetObjectField(TEXT("header")));
       Name = JsonObject->GetStringField(TEXT("name"));
       Pose = geometry_msgs::Pose::GetFromJson(JsonObject->GetObjectField(TEXT("pose")));
       Velocity = geometry_msgs::Twist::GetFromJson(JsonObject->GetObjectField(TEXT("velocity")));
@@ -69,28 +62,18 @@ namespace mujoco_msgs
 
     virtual FString ToString() const override
     {
-      return TEXT("ObjectState { header = ") + Header.ToString() +
-             TEXT(", name = ") + Name +
+      return TEXT("ObjectState { name = ") + Name +
              TEXT(", pose = ") + Pose.ToString() +
              TEXT(", velocity = ") + Velocity.ToString() + TEXT(" } ");
     }
 
     virtual TSharedPtr<FJsonObject> ToJsonObject() const override
     {
-      TSharedPtr<FJsonObject> Object = MakeShareable<FJsonObject>(new FJsonObject());
-      Object->SetObjectField(TEXT("header"), Header.ToJsonObject());
-      Object->SetStringField(TEXT("name"), Name);
-      Object->SetObjectField(TEXT("pose"), Pose.ToJsonObject());
-      Object->SetObjectField(TEXT("velocity"), Velocity.ToJsonObject());
-      return Object;
-    }
-
-    virtual FString ToYamlString() const override
-    {
-      FString OutputString;
-      TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
-      FJsonSerializer::Serialize(ToJsonObject().ToSharedRef(), Writer);
-      return OutputString;
+      TSharedPtr<FJsonObject> ObjectStateJsonObject = MakeShareable<FJsonObject>(new FJsonObject());
+      ObjectStateJsonObject->SetStringField(TEXT("name"), Name);
+      ObjectStateJsonObject->SetObjectField(TEXT("pose"), Pose.ToJsonObject());
+      ObjectStateJsonObject->SetObjectField(TEXT("velocity"), Velocity.ToJsonObject());
+      return ObjectStateJsonObject;
     }
   };
 } // namespace mujoco_msgs

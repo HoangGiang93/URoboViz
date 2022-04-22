@@ -17,3 +17,11 @@ void UROSSubscriber::Init()
     UE_LOG(LogROSSubscriber, Warning, TEXT("%s is not valid"), *GetName())
   }
 }
+
+void UROSSubscriber::Tick()
+{
+  if (Handler.IsValid())
+	{
+		Handler->Process();
+	}
+}

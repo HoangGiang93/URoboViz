@@ -78,20 +78,25 @@ namespace mujoco_srvs
 		class Response : public SrvResponse
 		{
 		private:
-			bool Success;
+			TArray<FString> Names;
 
 		public:
 			Response() {}
 
-			Response(bool InSuccess) : Success(InSuccess) {}
+			Response(const TArray<FString> &InNames) : Names(InNames) {}
 
-			uint8 GetSuccess() const { return Success; }
+			TArray<FString> GetNames() const { return Names; }
 
-			void SetSuccess(uint8 InSuccess) { Success = InSuccess; }
+			void SetNames(const TArray<FString> &InNames) { Names = InNames; }
 
 			virtual void FromJson(TSharedPtr<FJsonObject> JsonObject) override
 			{
-				Success = JsonObject->GetBoolField("success");
+				TArray<TSharedPtr<FJsonValue>> NamePtrArray = JsonObject->GetArrayField(TEXT("names"));
+				Names.Empty();
+				for (const TSharedPtr<FJsonValue> &NamePtr : NamePtrArray)
+				{
+					Names.Add(NamePtr->AsString());
+				}
 			}
 
 			static Response GetFromJson(TSharedPtr<FJsonObject> JsonObject)
@@ -103,14 +108,28 @@ namespace mujoco_srvs
 
 			virtual FString ToString() const override
 			{
-				return TEXT("SpawnObject::Response { success = ") + FString::FromInt(Success) + TEXT(" }");
+				FString NamesString = TEXT("[ ");
+				for (const FString &Name : Names)
+				{
+					NamesString += Name + TEXT(", ");
+				}
+				NamesString.RemoveFromEnd(TEXT(", "));
+				NamesString += TEXT(" ]");
+
+				return TEXT("SpawnObject::Response { object_states = ") + NamesString + TEXT(" } ");
 			}
 
 			virtual TSharedPtr<FJsonObject> ToJsonObject() const
 			{
-				TSharedPtr<FJsonObject> Object = MakeShareable<FJsonObject>(new FJsonObject());
-				Object->SetBoolField("success", Success);
-				return Object;
+				TSharedPtr<FJsonObject> NameArrayJsonObject = MakeShareable<FJsonObject>(new FJsonObject());
+				TArray<TSharedPtr<FJsonValue>> NamesPtrArray;
+				for (const FString &Name : Names)
+				{
+					TSharedPtr<FJsonValue> NamePtr = MakeShareable(new FJsonValueString(Name));
+					NamesPtrArray.Add(NamePtr);
+				}
+				NameArrayJsonObject->SetArrayField(TEXT("names"), NamesPtrArray);
+				return NameArrayJsonObject;
 			}
 		};
 	};

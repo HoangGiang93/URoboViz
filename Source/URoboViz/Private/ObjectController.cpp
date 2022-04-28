@@ -3,6 +3,7 @@
 #include "ObjectController.h"
 #include "Async/Async.h"
 #include "Conversions.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/StaticMeshActor.h"
 #include "mujoco_msgs/ObjectState.h"
 #include "mujoco_msgs/ObjectStatus.h"
@@ -51,7 +52,7 @@ void UObjectController::Tick(float DeltaTime)
 		if (bShowLinearVelocity)
 		{
 			FVector LinearVelocity = Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity();
-			const double LinearVelocityLength = LinearVelocity.Length();
+			const double LinearVelocityLength = LinearVelocity.Size();
 			LinearVelocity.Normalize();
 			const FString LinearVelocityText = FString::Printf(TEXT("[%.2f, %.2f, %.2f] * %.2f m/s"), LinearVelocity.X, LinearVelocity.Y, LinearVelocity.Z, LinearVelocityLength / 100.f);
 			const FVector LineEnd = LineStart + LinearVelocity * 10;
@@ -66,7 +67,7 @@ void UObjectController::Tick(float DeltaTime)
 		if (bShowAngularVelocity)
 		{
 			FVector AngularVelocity = Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInDegrees();
-			double AngularVelocityLength = AngularVelocity.Length();
+			double AngularVelocityLength = AngularVelocity.Size();
 			AngularVelocity.Normalize();
 			FString AngularVelocityText = FString::Printf(TEXT("[%.2f, %.2f, %.2f] * %.2f deg/s"), AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z, AngularVelocityLength);
 			const FVector LineEnd = LineStart + AngularVelocity * 10;

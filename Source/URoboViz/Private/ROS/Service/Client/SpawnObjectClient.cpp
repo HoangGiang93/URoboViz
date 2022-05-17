@@ -28,6 +28,23 @@ void USpawnObjectClient::Init()
       continue;
     }
     TriggerBase->OnActorBeginOverlap.AddDynamic(this, &USpawnObjectClient::OnBeginOverlap);
+
+    FTimerHandle UnusedHandle;
+    FTimerDelegate TimerCallback;
+    TimerCallback.BindLambda([TriggerBase]
+                             {
+                               TSet<AActor *> OverlappingActors;
+                               TriggerBase->GetOverlappingActors(OverlappingActors);
+                               UE_LOG(LogSpawnObjectClient, Log, TEXT("Try to spawn %d objects"), OverlappingActors.Num())
+                               for (AActor *const OverlappingActor : OverlappingActors)
+                               {
+                                 if (AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(OverlappingActor))
+                                 {
+                                   ObjectsToSpawnInMujoco.Add(StaticMeshActor);
+                                 }
+                               } });
+
+    GetWorld()->GetTimerManager().SetTimer(UnusedHandle, TimerCallback, 1.f, false);
   }
 }
 
@@ -58,9 +75,15 @@ void USpawnObjectClient::Tick()
           {TEXT("Sphere"), mujoco_msgs::ObjectInfo::SPHERE}};
 
   TArray<mujoco_msgs::ObjectStatus> ObjectStatusArray;
-  ObjectStatusArray.Reserve(ObjectsToSpawnInMujoco.Num());
+  int32 i = 0;
+  TSet<AStaticMeshActor *> Objects;
   for (AStaticMeshActor *const Object : ObjectsToSpawnInMujoco)
   {
+    if (i++ > SpawnObjectCountPerCycle)
+    {
+      break;
+    }
+
     if (Object != nullptr &&
         Object->GetStaticMeshComponent() != nullptr &&
         GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) == nullptr)
@@ -128,6 +151,8 @@ void USpawnObjectClient::Tick()
       ObjectStatus.SetVelocity(Velocity);
 
       ObjectStatusArray.Add(ObjectStatus);
+
+      Objects.Add(Object);
     }
   }
 
@@ -135,8 +160,12 @@ void USpawnObjectClient::Tick()
 
   Super::CallService();
 
-  GetRoboManager()->GetObjectController()->AddObjectsInMujoco(ObjectsToSpawnInMujoco);
-  ObjectsToSpawnInMujoco.Empty();
+  GetRoboManager()->GetObjectController()->AddObjectsInMujoco(Objects);
+
+  for (AStaticMeshActor *const Object : Objects)
+  {
+    ObjectsToSpawnInMujoco.Remove(Object);
+  }
 }
 
 void USpawnObjectClient::OnBeginOverlap(AActor *OverlappedActor, AActor *OtherActor)

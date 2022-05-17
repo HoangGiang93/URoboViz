@@ -53,11 +53,11 @@ TSharedPtr<FROSBridgeSrv::SrvResponse> FSpawnObjectServerCallback::Callback(TSha
   TArray<FString> ObjectNames;
   ObjectNames.Reserve(Objects.Num());
   for (const mujoco_msgs::ObjectStatus &Object : Objects)
-  {    
+  {
     bSuccess = bSuccess && ObjectController->SpawnOrMoveObjectByMujoco(Object);
     ObjectNames.Add(Object.GetInfo().GetName());
   }
-  
+
   if (bSuccess)
   {
     return MakeShareable<FROSBridgeSrv::SrvResponse>(new mujoco_srvs::SpawnObject::Response(ObjectNames));

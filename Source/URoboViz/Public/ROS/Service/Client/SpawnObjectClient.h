@@ -33,6 +33,9 @@ public:
   UPROPERTY(EditAnywhere)
   TSet<class ATriggerBase *> TriggerBases;
 
+  UPROPERTY(EditAnywhere)
+  int32 SpawnObjectCountPerCycle = 20;
+
 private:
   int32 Seq = 0;
 };

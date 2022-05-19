@@ -36,6 +36,9 @@ public:
   UPROPERTY(EditAnywhere)
   int32 SpawnObjectCountPerCycle = 20;
 
+  UPROPERTY(EditAnywhere)
+  bool bSpawnBoundingBox = false;
+
 private:
   int32 Seq = 0;
 };

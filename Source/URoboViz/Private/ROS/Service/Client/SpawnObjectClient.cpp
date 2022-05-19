@@ -94,15 +94,23 @@ void USpawnObjectClient::Tick()
       geometry_msgs::Twist Velocity;
 
       ObjectInfo.SetName(Object->GetName());
-      ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
-      for (const TPair<FString, mujoco_msgs::ObjectInfo::EType> &Type : TypeMap)
+      if (bSpawnBoundingBox)
       {
-        if (Object->GetStaticMeshComponent()->GetStaticMesh()->GetName().Contains(Type.Key))
+        ObjectInfo.SetType(mujoco_msgs::ObjectInfo::CUBE);
+      }
+      else
+      {
+        ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
+        for (const TPair<FString, mujoco_msgs::ObjectInfo::EType> &Type : TypeMap)
         {
-          ObjectInfo.SetType(Type.Value);
-          break;
+          if (Object->GetStaticMeshComponent()->GetStaticMesh()->GetName().Contains(Type.Key))
+          {
+            ObjectInfo.SetType(Type.Value);
+            break;
+          }
         }
       }
+
       switch (Object->GetStaticMeshComponent()->Mobility)
       {
       case EComponentMobility::Static:
@@ -120,7 +128,18 @@ void USpawnObjectClient::Tick()
       default:
         break;
       }
-      ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
+      if (bSpawnBoundingBox)
+      {
+        const FRotator ObjectRotator = Object->GetActorRotation();
+        Object->SetActorRotation(FRotator());
+        ObjectInfo.SetSize(FConversions::CmToM(Object->GetComponentsBoundingBox().GetSize() / 2));
+        Object->SetActorRotation(ObjectRotator);
+      }
+      else
+      {
+        ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
+      }
+
       FLinearColor Color(1.f, 1.f, 1.f, 1.f);
       if (Object->GetStaticMeshComponent()->GetMaterial(0) != nullptr)
       {

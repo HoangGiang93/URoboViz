@@ -130,10 +130,11 @@ void USpawnObjectClient::Tick()
       }
       if (bSpawnBoundingBox)
       {
+        const FVector ObjectLocation = Object->GetActorLocation();
         const FRotator ObjectRotator = Object->GetActorRotation();
-        Object->SetActorRotation(FRotator());
+        Object->SetActorLocationAndRotation(FVector(1000.f, 0.f, 0.f), FRotator()); // Move the object to somewhere that doesn't collide to anything
         ObjectInfo.SetSize(FConversions::CmToM(Object->GetComponentsBoundingBox().GetSize() / 2));
-        Object->SetActorRotation(ObjectRotator);
+        Object->SetActorLocationAndRotation(ObjectLocation, ObjectRotator);
       }
       else
       {

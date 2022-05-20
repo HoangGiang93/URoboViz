@@ -23,12 +23,13 @@ void USpawnObjectServer::CreateServiceServer()
   }
 
   ServiceServer =
-      MakeShareable<FSpawnObjectServerCallback>(new FSpawnObjectServerCallback(CommonServiceServerParameters.ServiceName, CommonServiceServerParameters.ServiceType, GetRoboManager()->GetObjectController()));
+      MakeShareable<FSpawnObjectServerCallback>(new FSpawnObjectServerCallback(CommonServiceServerParameters.ServiceName, CommonServiceServerParameters.ServiceType, GetRoboManager()->GetObjectController(), bAddObjectInMujoco));
 }
 
-FSpawnObjectServerCallback::FSpawnObjectServerCallback(const FString &InName, const FString &InType, UObjectController *InObjectController) : FROSBridgeSrvServer(InName, InType)
+FSpawnObjectServerCallback::FSpawnObjectServerCallback(const FString &InName, const FString &InType, UObjectController *InObjectController, const bool bInAddObjectInMujoco) : FROSBridgeSrvServer(InName, InType)
 {
   ObjectController = InObjectController;
+  bAddObjectInMujoco = bInAddObjectInMujoco;
 }
 
 TSharedPtr<FROSBridgeSrv::SrvRequest> FSpawnObjectServerCallback::FromJson(TSharedPtr<FJsonObject> JsonObject) const
@@ -54,7 +55,11 @@ TSharedPtr<FROSBridgeSrv::SrvResponse> FSpawnObjectServerCallback::Callback(TSha
   ObjectNames.Reserve(Objects.Num());
   for (const mujoco_msgs::ObjectStatus &Object : Objects)
   {
-    bSuccess = bSuccess && ObjectController->SpawnOrMoveObjectByMujoco(Object);
+    if (!ObjectController->SpawnOrMoveObjectByMujoco(Object, bAddObjectInMujoco))
+    {
+      bSuccess = false;
+    }
+
     ObjectNames.Add(Object.GetInfo().GetName());
   }
 

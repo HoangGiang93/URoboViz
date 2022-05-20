@@ -168,9 +168,9 @@ void UObjectController::MoveObjectByMarker(AStaticMeshActor *Object, const visua
 	}
 }
 
-void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus)
+void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco)
 {
-	AsyncTask(ENamedThreads::GameThread, [ObjectStatus, this]()
+	AsyncTask(ENamedThreads::GameThread, [ObjectStatus, bAddObjectInMujoco, this]()
 						{  
 							FString ObjectName = ObjectStatus.GetInfo().GetName();
 							const FTransform Transform = GetTransform(ObjectStatus);
@@ -228,7 +228,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							if (ObjectStatus.GetInfo().GetMovable())
 							{
 								StaticMeshComponent->SetMobility(EComponentMobility::Movable);
-								StaticMeshComponent->SetSimulatePhysics(true);
+								StaticMeshComponent->SetSimulatePhysics(!bAddObjectInMujoco);
 							}
 							else
 							{
@@ -242,14 +242,20 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 
 							Object->Tags.Add(*MeshTypeString); 
 							
-							ObjectsInUnreal.Add(Object); });
+							ObjectsInUnreal.Add(Object); 
+							
+							if (bAddObjectInMujoco)
+							{
+								ObjectsInMujoco.Add(Object);
+							}
+							});
 }
 
-bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus)
+bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco)
 {
 	if (GetObjectInUnreal(ObjectStatus.GetInfo().GetName()) == nullptr)
 	{
-		SpawnObjectInUnreal(ObjectStatus);
+		SpawnObjectInUnreal(ObjectStatus, bAddObjectInMujoco);
 		return true;
 	}
 	else if (AStaticMeshActor *Object = GetObjectInMujoco(ObjectStatus.GetInfo().GetName()))

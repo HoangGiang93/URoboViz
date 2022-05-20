@@ -41,9 +41,9 @@ public:
 
 	void RemoveObjectInMujoco(const TSet<AStaticMeshActor *> &Objects);
 
-	void SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus);
+	void SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco = false);
 
-	bool SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus);
+	bool SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco = false);
 
 	void MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus);
 

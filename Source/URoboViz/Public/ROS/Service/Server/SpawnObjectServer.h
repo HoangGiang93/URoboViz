@@ -15,6 +15,10 @@ class UROBOVIZ_API USpawnObjectServer : public UROSServiceServer
 public:
   USpawnObjectServer();
 
+public:
+  UPROPERTY(EditAnywhere)
+  bool bAddObjectInMujoco;
+
 protected:
   virtual void CreateServiceServer() override;
 };
@@ -22,13 +26,15 @@ protected:
 class FSpawnObjectServerCallback final : public FROSBridgeSrvServer
 {
 public:
-  FSpawnObjectServerCallback(const FString &InName, const FString &InType, UObjectController *InObjectController);
+  FSpawnObjectServerCallback(const FString &InName, const FString &InType, UObjectController *InObjectController, const bool bInAddObjectInMujoco);
 
   TSharedPtr<FROSBridgeSrv::SrvRequest> FromJson(TSharedPtr<FJsonObject> JsonObject) const override;
 
   TSharedPtr<FROSBridgeSrv::SrvResponse> Callback(TSharedPtr<FROSBridgeSrv::SrvRequest> InRequest) override;
 
 private:
+  bool bAddObjectInMujoco;
+
   UObjectController *ObjectController;
 
   class UStaticMesh *StaticMesh;

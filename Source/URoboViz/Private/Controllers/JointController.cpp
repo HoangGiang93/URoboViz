@@ -23,7 +23,7 @@ void UJointController::Init()
   TMap<FString, EJointType> BoneTails = {{TEXT("_continuous_bone"), EJointType::Continuous}, {TEXT("_prismatic_bone"), EJointType::Prismatic}, {TEXT("_revolute_bone"), EJointType::Revolute}};
   for (const FName &BoneName : BoneNames)
   {
-    for (const TPair<FString, EJointType> &BoneTail : BoneTails )
+    for (const TPair<FString, EJointType> &BoneTail : BoneTails)
     {
       if (BoneName.ToString().Contains(BoneTail.Key, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
       {

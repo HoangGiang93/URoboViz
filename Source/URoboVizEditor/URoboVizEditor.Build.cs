@@ -3,9 +3,9 @@
 using System.IO;
 using UnrealBuildTool;
 
-public class URoboViz : ModuleRules
+public class URoboVizEditor : ModuleRules
 {
-  public URoboViz(ReadOnlyTargetRules Target) : base(Target)
+  public URoboVizEditor(ReadOnlyTargetRules Target) : base(Target)
   {
     PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -17,11 +17,9 @@ public class URoboViz : ModuleRules
       { "Core",
         "CoreUObject",
         "Engine",
-        "InputCore",
-        "UROSBridge",
-        "Json",
-        "JsonUtilities",
-        "UConversions"
+        "BlueprintGraph",
+        "AnimGraph",
+        "AnimGraphRuntime"
       }
       );
 

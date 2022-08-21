@@ -3,7 +3,7 @@
 #include "Sensors/Lidar.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Conversions.h"
-#include "DrawDebugHelpers.h"
+// #include "DrawDebugHelpers.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogLidar, Log, All);
 
@@ -86,11 +86,11 @@ void ULidar::Tick(float DeltaTime)
   else // time to scan fully is shorter than DeltaTime => scan fully
   {
     AngleStart = AngleMin;
-    AngleEnd = AngleMax; 
+    AngleEnd = AngleMax;
   }
 
   const float ScanTime = GetScanTime();
-  
+
   for (float Angle = AngleMin; Angle < AngleMax; Angle += AngleIncrement)
   {
     if (Angle >= AngleStart && Angle <= AngleEnd)
@@ -115,14 +115,14 @@ void ULidar::Tick(float DeltaTime)
       if (Hit)
       {
         EndTrace = LidarLocation + (RangeMinInCm + HitInfo.Distance) * LidarQuat.RotateVector(ResultRotation.Vector());
-        if (bDrawLines)
-        {
-          DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, ScanTime, 0, 1.f);
-        }
-        if (bDrawPoints)
-        {
-          DrawDebugPoint(GetWorld(), EndTrace, 10, FColor::Red, false, ScanTime, 0);
-        }
+        // if (bDrawLines)
+        // {
+        //   DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, ScanTime, 0, 1.f);
+        // }
+        // if (bDrawPoints)
+        // {
+        //   DrawDebugPoint(GetWorld(), EndTrace, 10, FColor::Red, false, ScanTime, 0);
+        // }
       }
       Ranges.Add(FConversions::CmToM(RangeMinInCm + HitInfo.Distance));
     }
@@ -143,7 +143,7 @@ void ULidar::Tick(float DeltaTime)
   {
     FlushPersistentDebugLines(GetWorld());
   }
-  
+
   while (AngleStart >= AngleMax)
   {
     AngleStart -= AngleDistance;

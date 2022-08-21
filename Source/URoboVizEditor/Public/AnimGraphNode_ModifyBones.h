@@ -3,39 +3,16 @@
 #pragma once
 
 #include "AnimGraphNode_SkeletalControlBase.h"
+#include "AnimNode_ModifyBones.h"
 #include "BoneControllers/AnimNode_SkeletalControlBase.h"
 #include "BonePose.h"
+#include "UObject/ObjectMacros.h"
 // clang-format off
 #include "AnimGraphNode_ModifyBones.generated.h"
 // clang-format on
 
-USTRUCT(BlueprintType)
-struct UROBOVIZ_API FAnimNode_ModifyBones : public FAnimNode_SkeletalControlBase
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = JointPositions, meta = (PinShownByDefault))
-	TMap<FName, float> JointPositions;
-
-public:
-	FAnimNode_ModifyBones();
-
-	// FAnimNode_SkeletalControlBase interface
-	virtual void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext &Output, TArray<FBoneTransform> &OutBoneTransforms) override;
-	virtual bool IsValidToEvaluate(const USkeleton *Skeleton, const FBoneContainer &RequiredBones) override;
-	// End of FAnimNode_SkeletalControlBase interface
-
-private:
-	// FAnimNode_SkeletalControlBase interface
-	virtual void InitializeBoneReferences(const FBoneContainer &RequiredBones) override;
-	// End of FAnimNode_SkeletalControlBase interface
-
-	TArray<FBoneReference> BonesToModify;
-};
-
 UCLASS(meta = (Keywords = "Modify Transforms"))
-class UROBOVIZ_API UAnimGraphNode_ModifyBones : public UAnimGraphNode_SkeletalControlBase
+class UROBOVIZEDITOR_API UAnimGraphNode_ModifyBones : public UAnimGraphNode_SkeletalControlBase
 {
 	GENERATED_UCLASS_BODY()
 
@@ -51,7 +28,6 @@ public:
 
 	// UAnimGraphNode_Base interface
 	virtual FString GetNodeCategory() const override;
-	virtual void CreateOutputPins() override;
 	// End of UAnimGraphNode_Base interface
 
 protected:
@@ -61,6 +37,7 @@ protected:
 	// End of UAnimGraphNode_Base interface
 
 	// UAnimGraphNode_SkeletalControlBase interface
+	virtual FText GetControllerDescription() const override;
 	virtual const FAnimNode_SkeletalControlBase *GetNode() const override { return &Node; }
 	// End of UAnimGraphNode_SkeletalControlBase interface
 };

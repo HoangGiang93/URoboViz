@@ -18,6 +18,11 @@
 	  "Name": "URoboViz",
 	  "Type": "Runtime",
 	  "LoadingPhase": "Default"
+	},
+  {
+	  "Name": "URoboVizEditor",
+	  "Type": "UncookedOnly",
+	  "LoadingPhase": "Default"
 	}
   ],
   "Plugins": [

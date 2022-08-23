@@ -9,7 +9,7 @@
 // clang-format on
 
 USTRUCT(BlueprintInternalUseOnly)
-struct UROBOVIZEDITOR_API FAnimNode_ModifyBones : public FAnimNode_SkeletalControlBase
+struct UROBOVIZ_API FAnimNode_ModifyBones : public FAnimNode_SkeletalControlBase
 {
   GENERATED_USTRUCT_BODY()
 

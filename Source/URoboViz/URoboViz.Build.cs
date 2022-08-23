@@ -21,7 +21,8 @@ public class URoboViz : ModuleRules
         "UROSBridge",
         "Json",
         "JsonUtilities",
-        "UConversions"
+        "UConversions",
+        "AnimGraphRuntime"
       }
       );
 

@@ -19,7 +19,8 @@ public class URoboVizEditor : ModuleRules
         "Engine",
         "BlueprintGraph",
         "AnimGraph",
-        "AnimGraphRuntime"
+        "AnimGraphRuntime",
+        "URoboViz"
       }
       );
 

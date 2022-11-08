@@ -3,7 +3,9 @@
 #include "Sensors/Lidar.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Conversions.h"
-// #include "DrawDebugHelpers.h"
+#if WITH_EDITOR
+#include "DrawDebugHelpers.h"
+#endif
 
 DEFINE_LOG_CATEGORY_STATIC(LogLidar, Log, All);
 
@@ -115,14 +117,16 @@ void ULidar::Tick(float DeltaTime)
       if (Hit)
       {
         EndTrace = LidarLocation + (RangeMinInCm + HitInfo.Distance) * LidarQuat.RotateVector(ResultRotation.Vector());
-        // if (bDrawLines)
-        // {
-        //   DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, ScanTime, 0, 1.f);
-        // }
-        // if (bDrawPoints)
-        // {
-        //   DrawDebugPoint(GetWorld(), EndTrace, 10, FColor::Red, false, ScanTime, 0);
-        // }
+#if WITH_EDITOR
+        if (bDrawLines)
+        {
+          DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Red, false, ScanTime, 0, 1.f);
+        }
+        if (bDrawPoints)
+        {
+          DrawDebugPoint(GetWorld(), EndTrace, 10, FColor::Red, false, ScanTime, 0);
+        }
+#endif
       }
       Ranges.Add(FConversions::CmToM(RangeMinInCm + HitInfo.Distance));
     }

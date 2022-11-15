@@ -46,7 +46,7 @@ struct FJoint
 			break;
 
 		case EJointType::Continuous:
-			JointPosition = -DesiredJointPosition;
+			JointPosition = -FMath::RadiansToDegrees(DesiredJointPosition);
 			break;
 
 		case EJointType::Prismatic:

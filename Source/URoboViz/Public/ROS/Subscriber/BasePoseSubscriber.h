@@ -1,5 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
+#pragma once
+
 #include "ROSSubscriber.h"
 // clang-format off
 #include "BasePoseSubscriber.generated.h"

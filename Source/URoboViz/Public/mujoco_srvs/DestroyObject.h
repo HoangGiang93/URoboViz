@@ -1,3 +1,5 @@
+// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
+
 #pragma once
 
 #include "ROSBridgeSrv.h"

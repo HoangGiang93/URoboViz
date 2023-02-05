@@ -4,18 +4,18 @@
 
 #include "ROSSubscriber.h"
 // clang-format off
-#include "JointStateSubscriber.generated.h"
+#include "JointStatesSubscriber.generated.h"
 // clang-format on
 
 class UJointController;
 
 UCLASS()
-class UROBOVIZ_API UJointStateSubscriber final : public UROSSubscriber
+class UROBOVIZ_API UJointStatesSubscriber final : public UROSSubscriber
 {
   GENERATED_BODY()
 
 public:
-  UJointStateSubscriber();
+  UJointStatesSubscriber();
 
 protected:
   void CreateSubscriber() override;
@@ -25,10 +25,10 @@ public:
   FString JointControllerName = TEXT("JointController");
 };
 
-class UROBOVIZ_API FJointStateSubscriberCallback final : public FROSBridgeSubscriber
+class UROBOVIZ_API FJointStatesSubscriberCallback final : public FROSBridgeSubscriber
 {
 public:
-  FJointStateSubscriberCallback(FString InTopic, FString InType, UJointController *InJointController);
+  FJointStatesSubscriberCallback(FString InTopic, FString InType, UJointController *InJointController);
 
   TSharedPtr<FROSBridgeMsg> ParseMessage(TSharedPtr<FJsonObject> JsonObject) const override;
 

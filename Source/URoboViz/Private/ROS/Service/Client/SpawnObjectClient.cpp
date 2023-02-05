@@ -10,7 +10,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogSpawnObjectClient, Log, All)
 
-TSet<AStaticMeshActor *> ObjectsToSpawnInMujoco;
+TSet<AActor *> ObjectsToSpawnInMujoco;
 
 USpawnObjectClient::USpawnObjectClient()
 {
@@ -76,103 +76,105 @@ void USpawnObjectClient::Tick()
 
   TArray<mujoco_msgs::ObjectStatus> ObjectStatusArray;
   int32 i = 0;
-  TSet<AStaticMeshActor *> Objects;
-  for (AStaticMeshActor *const Object : ObjectsToSpawnInMujoco)
+  TSet<AActor *> Objects;
+  for (AActor *const Object : ObjectsToSpawnInMujoco)
   {
     if (i++ > SpawnObjectCountPerCycle)
     {
       break;
     }
 
-    if (Object != nullptr &&
-        Object->GetStaticMeshComponent() != nullptr &&
-        GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) == nullptr)
+    if (AStaticMeshActor *StaticMeshObject = Cast<AStaticMeshActor>(Object))
     {
-      mujoco_msgs::ObjectStatus ObjectStatus;
-      mujoco_msgs::ObjectInfo ObjectInfo;
-      geometry_msgs::Pose Pose;
-      geometry_msgs::Twist Velocity;
+      if (StaticMeshObject->GetStaticMeshComponent() != nullptr &&
+          GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) == nullptr)
+      {
+        mujoco_msgs::ObjectStatus ObjectStatus;
+        mujoco_msgs::ObjectInfo ObjectInfo;
+        geometry_msgs::Pose Pose;
+        geometry_msgs::Twist Velocity;
 
-      ObjectInfo.SetName(Object->GetName());
-      if (bSpawnBoundingBox)
-      {
-        ObjectInfo.SetType(mujoco_msgs::ObjectInfo::CUBE);
-      }
-      else
-      {
-        ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
-        for (const TPair<FString, mujoco_msgs::ObjectInfo::EType> &Type : TypeMap)
+        ObjectInfo.SetName(StaticMeshObject->GetName());
+        if (bSpawnBoundingBox)
         {
-          if (Object->GetStaticMeshComponent()->GetStaticMesh()->GetName().Contains(Type.Key))
+          ObjectInfo.SetType(mujoco_msgs::ObjectInfo::CUBE);
+        }
+        else
+        {
+          ObjectInfo.SetType(mujoco_msgs::ObjectInfo::MESH);
+          for (const TPair<FString, mujoco_msgs::ObjectInfo::EType> &Type : TypeMap)
           {
-            ObjectInfo.SetType(Type.Value);
-            break;
+            if (StaticMeshObject->GetStaticMeshComponent()->GetStaticMesh()->GetName().Contains(Type.Key))
+            {
+              ObjectInfo.SetType(Type.Value);
+              break;
+            }
           }
         }
+
+        switch (StaticMeshObject->GetStaticMeshComponent()->Mobility)
+        {
+        case EComponentMobility::Static:
+          ObjectInfo.SetMovable(false);
+          break;
+
+        case EComponentMobility::Stationary:
+          ObjectInfo.SetMovable(false);
+          break;
+
+        case EComponentMobility::Movable:
+          ObjectInfo.SetMovable(true);
+          break;
+
+        default:
+          break;
+        }
+        if (bSpawnBoundingBox)
+        {
+          const FVector ObjectLocation = StaticMeshObject->GetActorLocation();
+          const FRotator ObjectRotator = StaticMeshObject->GetActorRotation();
+          StaticMeshObject->SetActorLocationAndRotation(FVector(1000.f, 0.f, 0.f), FRotator()); // Move the object to somewhere that doesn't collide to anything
+          ObjectInfo.SetSize(FConversions::CmToM(StaticMeshObject->GetComponentsBoundingBox().GetSize() / 2));
+          StaticMeshObject->SetActorLocationAndRotation(ObjectLocation, ObjectRotator);
+        }
+        else
+        {
+          ObjectInfo.SetSize(StaticMeshObject->GetActorScale3D() / 2);
+        }
+
+        FLinearColor Color(1.f, 1.f, 1.f, 1.f);
+        if (StaticMeshObject->GetStaticMeshComponent()->GetMaterial(0) != nullptr)
+        {
+          StaticMeshObject->GetStaticMeshComponent()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
+        }
+        ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, Color.A));
+        geometry_msgs::Inertia Inertial;
+        Inertial.SetM(StaticMeshObject->GetStaticMeshComponent()->GetMass());
+        Inertial.SetCom(FConversions::CmToM(StaticMeshObject->GetStaticMeshComponent()->GetCenterOfMass() - StaticMeshObject->GetActorLocation()));
+        Inertial.SetIxx(StaticMeshObject->GetStaticMeshComponent()->GetInertiaTensor().X / 10000);
+        Inertial.SetIyy(StaticMeshObject->GetStaticMeshComponent()->GetInertiaTensor().Y / 10000);
+        Inertial.SetIzz(StaticMeshObject->GetStaticMeshComponent()->GetInertiaTensor().Z / 10000);
+        Inertial.SetIxy(0.0);
+        Inertial.SetIxz(0.0);
+        Inertial.SetIyz(0.0);
+        ObjectInfo.SetInertial(Inertial);
+        FString Mesh = StaticMeshObject->GetStaticMeshComponent()->GetStaticMesh()->GetName();
+        Mesh.RemoveFromStart(TEXT("SM_"));
+        ObjectInfo.SetMesh(Mesh);
+        ObjectStatus.SetInfo(ObjectInfo);
+
+        Pose.SetPosition(FConversions::UToROS(StaticMeshObject->GetActorLocation()));
+        Pose.SetOrientation(FConversions::UToROS(StaticMeshObject->GetActorRotation().Quaternion()));
+        ObjectStatus.SetPose(Pose);
+
+        Velocity.SetLinear(FConversions::UToROS(StaticMeshObject->GetStaticMeshComponent()->GetPhysicsLinearVelocity()));
+        Velocity.SetAngular(StaticMeshObject->GetActorRotation().UnrotateVector(StaticMeshObject->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians()) * FVector(-1, 1, -1));
+        ObjectStatus.SetVelocity(Velocity);
+
+        ObjectStatusArray.Add(ObjectStatus);
+
+        Objects.Add(StaticMeshObject);
       }
-
-      switch (Object->GetStaticMeshComponent()->Mobility)
-      {
-      case EComponentMobility::Static:
-        ObjectInfo.SetMovable(false);
-        break;
-
-      case EComponentMobility::Stationary:
-        ObjectInfo.SetMovable(false);
-        break;
-
-      case EComponentMobility::Movable:
-        ObjectInfo.SetMovable(true);
-        break;
-
-      default:
-        break;
-      }
-      if (bSpawnBoundingBox)
-      {
-        const FVector ObjectLocation = Object->GetActorLocation();
-        const FRotator ObjectRotator = Object->GetActorRotation();
-        Object->SetActorLocationAndRotation(FVector(1000.f, 0.f, 0.f), FRotator()); // Move the object to somewhere that doesn't collide to anything
-        ObjectInfo.SetSize(FConversions::CmToM(Object->GetComponentsBoundingBox().GetSize() / 2));
-        Object->SetActorLocationAndRotation(ObjectLocation, ObjectRotator);
-      }
-      else
-      {
-        ObjectInfo.SetSize(Object->GetActorScale3D() / 2);
-      }
-
-      FLinearColor Color(1.f, 1.f, 1.f, 1.f);
-      if (Object->GetStaticMeshComponent()->GetMaterial(0) != nullptr)
-      {
-        Object->GetStaticMeshComponent()->GetMaterial(0)->GetVectorParameterValue(TEXT("BaseColor"), Color);
-      }
-      ObjectInfo.SetColor(std_msgs::ColorRGBA(Color.R, Color.G, Color.B, Color.A));
-      geometry_msgs::Inertia Inertial;
-      Inertial.SetM(Object->GetStaticMeshComponent()->GetMass());
-      Inertial.SetCom(FConversions::CmToM(Object->GetStaticMeshComponent()->GetCenterOfMass() - Object->GetActorLocation()));
-      Inertial.SetIxx(Object->GetStaticMeshComponent()->GetInertiaTensor().X / 10000);
-      Inertial.SetIyy(Object->GetStaticMeshComponent()->GetInertiaTensor().Y / 10000);
-      Inertial.SetIzz(Object->GetStaticMeshComponent()->GetInertiaTensor().Z / 10000);
-      Inertial.SetIxy(0.0);
-      Inertial.SetIxz(0.0);
-      Inertial.SetIyz(0.0);
-      ObjectInfo.SetInertial(Inertial);
-      FString Mesh = Object->GetStaticMeshComponent()->GetStaticMesh()->GetName();
-      Mesh.RemoveFromStart(TEXT("SM_"));
-      ObjectInfo.SetMesh(Mesh);
-      ObjectStatus.SetInfo(ObjectInfo);
-
-      Pose.SetPosition(FConversions::UToROS(Object->GetActorLocation()));
-      Pose.SetOrientation(FConversions::UToROS(Object->GetActorRotation().Quaternion()));
-      ObjectStatus.SetPose(Pose);
-
-      Velocity.SetLinear(FConversions::UToROS(Object->GetStaticMeshComponent()->GetPhysicsLinearVelocity()));
-      Velocity.SetAngular(Object->GetActorRotation().UnrotateVector(Object->GetStaticMeshComponent()->GetPhysicsAngularVelocityInRadians()) * FVector(-1, 1, -1));
-      ObjectStatus.SetVelocity(Velocity);
-
-      ObjectStatusArray.Add(ObjectStatus);
-
-      Objects.Add(Object);
     }
   }
 
@@ -182,7 +184,7 @@ void USpawnObjectClient::Tick()
 
   GetRoboManager()->GetObjectController()->AddObjectsInMujoco(Objects);
 
-  for (AStaticMeshActor *const Object : Objects)
+  for (AActor *const Object : Objects)
   {
     ObjectsToSpawnInMujoco.Remove(Object);
   }
@@ -210,11 +212,11 @@ void FSpawnObjectClientCallback::Callback(TSharedPtr<FROSBridgeSrv::SrvResponse>
 
   for (const FString &ObjectName : StaticCastSharedPtr<mujoco_srvs::SpawnObject::Response>(InResponse)->GetNames())
   {
-    if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectName))
+    if (AStaticMeshActor *StaticMeshObject = Cast<AStaticMeshActor>(ObjectController->GetObjectInMujoco(ObjectName)))
     {
-      if (Object->GetStaticMeshComponent()->Mobility == EComponentMobility::Movable)
+      if (StaticMeshObject->GetStaticMeshComponent()->Mobility == EComponentMobility::Movable)
       {
-        Object->GetStaticMeshComponent()->SetSimulatePhysics(false);
+        StaticMeshObject->GetStaticMeshComponent()->SetSimulatePhysics(false);
       }
     }
   }

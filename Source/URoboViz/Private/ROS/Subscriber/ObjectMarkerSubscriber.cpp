@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Subscriber/ObjectMarkerSubscriber.h"
+#include "Engine/StaticMeshActor.h"
 #include "ObjectController.h"
 #include "visualization_msgs/Marker.h"
 
@@ -49,7 +50,7 @@ void FObjectMarkerSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
     TSharedPtr<visualization_msgs::Marker> ObjectMarker = StaticCastSharedPtr<visualization_msgs::Marker>(Msg);
 
     const FString ObjectName = ObjectMarker->GetNamespace();
-    if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectName))
+    if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(ObjectController->GetObjectInMujoco(ObjectName)))
     {
       ObjectController->MoveObjectByMarker(Object, *ObjectMarker);
     }

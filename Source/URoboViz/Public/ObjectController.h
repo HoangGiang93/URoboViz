@@ -16,7 +16,7 @@ namespace visualization_msgs
 	class Marker;
 }
 
-class AStaticMeshActor;
+class AActor;
 
 UCLASS(Blueprintable, DefaultToInstanced, collapsecategories, hidecategories = Object, editinlinenew)
 class UROBOVIZ_API UObjectController : public UObject
@@ -29,27 +29,27 @@ public:
 public:
 	void Tick(float DeltaTime);
 
-	AStaticMeshActor *GetObjectInMujoco(const FString &ObjectName) const;
+	AActor *GetObjectInMujoco(const FString &ObjectName) const;
 
-	AStaticMeshActor *GetObjectInUnreal(const FString &ObjectName) const;
+	AActor *GetObjectInUnreal(const FString &ObjectName) const;
 
-	TSet<AStaticMeshActor *> GetObjectsInMujoco() const { return ObjectsInMujoco; }
+	TSet<AActor *> GetObjectsInMujoco() const { return ObjectsInMujoco; }
 
-	TSet<AStaticMeshActor *> GetObjectsInUnreal() const { return ObjectsInUnreal; }
+	TSet<AActor *> GetObjectsInUnreal() const { return ObjectsInUnreal; }
 
-	void AddObjectsInMujoco(const TSet<AStaticMeshActor *> &Objects);
+	void AddObjectsInMujoco(const TSet<AActor *> &Objects);
 
-	void RemoveObjectInMujoco(const TSet<AStaticMeshActor *> &Objects);
+	void RemoveObjectInMujoco(const TSet<AActor *> &Objects);
 
 	void SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco = false);
 
 	bool SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco = false);
 
-	void MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus);
+	void MoveObjectByMujoco(AActor *Object, const mujoco_msgs::ObjectStatus &ObjectStatus);
 
-	void MoveObjectByMujoco(AStaticMeshActor *Object, const mujoco_msgs::ObjectState &ObjectState);
+	void MoveObjectByMujoco(AActor *Object, const mujoco_msgs::ObjectState &ObjectState);
 
-	void MoveObjectByMarker(AStaticMeshActor *Object, const visualization_msgs::Marker &ObjectMarker);
+	void MoveObjectByMarker(AActor *Object, const visualization_msgs::Marker &ObjectMarker);
 
 public:
 	UPROPERTY(EditAnywhere)
@@ -60,10 +60,10 @@ public:
 
 private:
 	UPROPERTY(VisibleAnywhere)
-	TSet<AStaticMeshActor *> ObjectsInMujoco;
+	TSet<AActor *> ObjectsInMujoco;
 
 	UPROPERTY(EditAnywhere)
-	TSet<AStaticMeshActor *> ObjectsInUnreal;
+	TSet<AActor *> ObjectsInUnreal;
 
 private:
 	TMap<FLinearColor, FString> ColorMap;

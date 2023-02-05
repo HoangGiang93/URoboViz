@@ -10,7 +10,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogDestroyObjectClient, Log, All)
 
-TSet<AStaticMeshActor *> ObjectsToDestroyInMujoco;
+TSet<AActor *> ObjectsToDestroyInMujoco;
 
 UDestroyObjectClient::UDestroyObjectClient()
 {
@@ -53,7 +53,7 @@ void UDestroyObjectClient::Tick()
 
   TArray<FString> ObjectNames;
   ObjectNames.Reserve(ObjectsToDestroyInMujoco.Num());
-  for (AStaticMeshActor *const Object : ObjectsToDestroyInMujoco)
+  for (AActor *const Object : ObjectsToDestroyInMujoco)
   {
     if (Object != nullptr &&
         GetRoboManager()->GetObjectController()->GetObjectInMujoco(Object->GetName()) != nullptr)
@@ -103,7 +103,7 @@ void FDestroyObjectClientCallback::Callback(TSharedPtr<FROSBridgeSrv::SrvRespons
 
   for (const mujoco_msgs::ObjectState &ObjectState : StaticCastSharedPtr<mujoco_srvs::DestroyObject::Response>(InResponse)->GetObjectStates())
   {
-    if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectState.GetName()))
+    if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(ObjectController->GetObjectInMujoco(ObjectState.GetName())))
     {
       ObjectController->MoveObjectByMujoco(Object, ObjectState);
     }

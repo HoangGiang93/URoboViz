@@ -1,9 +1,10 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Subscriber/ObjectStateSubscriber.h"
+#include "Engine/StaticMeshActor.h"
 #include "ObjectController.h"
-#include "visualization_msgs/Marker.h"
 #include "mujoco_msgs/ObjectState.h"
+#include "visualization_msgs/Marker.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogObjectStateSubscriber, Log, All)
 
@@ -49,7 +50,7 @@ void FObjectStateSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
   {
     TSharedPtr<mujoco_msgs::ObjectState> ObjectState = StaticCastSharedPtr<mujoco_msgs::ObjectState>(Msg);
 
-    if (AStaticMeshActor *Object = ObjectController->GetObjectInMujoco(ObjectState->GetName()))
+    if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(ObjectController->GetObjectInMujoco(ObjectState->GetName())))
     {
       ObjectController->MoveObjectByMujoco(Object, *ObjectState);
     }

@@ -65,7 +65,7 @@ void UObjectController::Tick(float DeltaTime)
 					return;
 				}
 
-				for (const TPair<FString, FJoint> &DesiredObjectJointPosition : DesiredObjectJointPositions)
+				for (const TPair<FString, FJoint> &DesiredObjectJointPosition : DesiredObjectJointPositions[SkeletalMeshObject->GetName()])
 				{
 					if (RoboAnim->JointPositions.Contains(DesiredObjectJointPosition.Value.BoneName))
 					{
@@ -361,6 +361,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									TArray<FName> BoneNames;
 									SkeletalMeshComponent->GetBoneNames(BoneNames);
 									TMap<FString, EJointType> BoneTails = {{TEXT("_continuous_bone"), EJointType::Continuous}, {TEXT("_prismatic_bone"), EJointType::Prismatic}, {TEXT("_revolute_bone"), EJointType::Revolute}};
+									DesiredObjectJointPositions.Add(ObjectName);
 									for (const FName &BoneName : BoneNames)
 									{
 										for (const TPair<FString, EJointType> &BoneTail : BoneTails)
@@ -369,7 +370,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 											{
 												FString JointName = BoneName.ToString();
 												JointName.RemoveFromEnd(BoneTail.Key);
-												DesiredObjectJointPositions.Add(JointName, FJoint(BoneName, BoneTail.Value));
+												DesiredObjectJointPositions[ObjectName].Add(JointName, FJoint(BoneName, BoneTail.Value));
 											}
 										}
 									}
@@ -377,9 +378,9 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									RoboAnim->NativeBeginPlay();
 								}
 								}
-								
+#if WITH_EDITOR
 								Object->SetActorLabel(ObjectName);
-								
+#endif
 								Object->Tags.Add(*MeshTypeString); 
 									
 								ObjectsInUnreal.Add(Object); 
@@ -405,10 +406,10 @@ bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatu
 	return false;
 }
 
-void UObjectController::SetDesiredObjectJointPositionFromROS(const FString &JointName, const float DesiredObjectJointPosition)
+void UObjectController::SetDesiredObjectJointPositionFromROS(const FString &Objectname, const FString &JointName, const float DesiredObjectJointPosition)
 {
-  if (DesiredObjectJointPositions.Contains(JointName))
-  {
-    DesiredObjectJointPositions[JointName].SetDesiredJointPositionFromROS(DesiredObjectJointPosition);
-  }
+	if (DesiredObjectJointPositions.Contains(Objectname) && DesiredObjectJointPositions[Objectname].Contains(JointName))
+	{
+		DesiredObjectJointPositions[Objectname][JointName].SetDesiredJointPositionFromROS(DesiredObjectJointPosition);
+	}
 }

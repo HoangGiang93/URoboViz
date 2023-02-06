@@ -33,4 +33,6 @@ public:
 
 private:
   UObjectController *ObjectController;
+
+  TMap<FString, TMap<FString, FString>> JointNameMap;
 };

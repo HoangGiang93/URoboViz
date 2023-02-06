@@ -48,9 +48,30 @@ void FObjectJointStatesSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Ms
   if (ObjectController)
   {
     TSharedPtr<sensor_msgs::JointState> ObjectJointStates = StaticCastSharedPtr<sensor_msgs::JointState>(Msg);
-    for (int32 i = 0; i < ObjectJointStates->Names.Num(); i++)
+    FString FrameId = ObjectJointStates->GetHeader().GetFrameId();
+
+    if (!JointNameMap.Contains(FrameId))
     {
-      ObjectController->SetDesiredObjectJointPositionFromROS(ObjectJointStates->GetName()[i], ObjectJointStates->GetPosition()[i]);
+      JointNameMap.Add(FrameId);
+    }
+
+    for (int32 i = 0; i < ObjectJointStates->GetName().Num(); i++)
+    {
+      FString ObjectJointName;
+      if (!JointNameMap[FrameId].Contains(ObjectJointStates->GetName()[i]))
+      {
+        ObjectJointName = ObjectJointStates->GetName()[i];
+        int32 LastIndex;
+        if (ObjectJointName.FindLastChar(*TEXT("_"), LastIndex))
+        {
+          ObjectJointName = ObjectJointName.Left(LastIndex);
+        }
+        JointNameMap[FrameId].Add(ObjectJointStates->GetName()[i], ObjectJointName);
+      }
+
+      ObjectJointName = JointNameMap[FrameId][ObjectJointStates->GetName()[i]];
+      const float DesiredObjectJointPosition = ObjectJointStates->GetPosition()[i];
+      ObjectController->SetDesiredObjectJointPositionFromROS(FrameId, ObjectJointName, DesiredObjectJointPosition);
     }
   }
 }

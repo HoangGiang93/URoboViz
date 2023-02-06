@@ -51,6 +51,8 @@ public:
 
 	void MoveObjectByMarker(AActor *Object, const visualization_msgs::Marker &ObjectMarker);
 
+	void SetDesiredObjectJointPositionFromROS(const FString &JointName, const float DesiredObjectJointPosition);
+
 public:
 	UPROPERTY(EditAnywhere)
 	bool bShowLinearVelocity;
@@ -67,4 +69,7 @@ private:
 
 private:
 	TMap<FLinearColor, FString> ColorMap;
+
+	UPROPERTY(EditAnywhere)
+	TMap<FString, FJoint> DesiredObjectJointPositions;
 };

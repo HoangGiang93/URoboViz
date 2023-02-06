@@ -3,10 +3,12 @@
 #include "ObjectController.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Async/Async.h"
+#include "Controllers/JointController.h"
 #include "Conversions.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/StaticMeshActor.h"
 #include "Misc/Paths.h"
+#include "RoboAnim.h"
 #include "UObject/ConstructorHelpers.h"
 #include "mujoco_msgs/ObjectState.h"
 #include "mujoco_msgs/ObjectStatus.h"
@@ -51,6 +53,28 @@ void UObjectController::Tick(float DeltaTime)
 		{
 			continue;
 		}
+
+		if (ASkeletalMeshActor *SkeletalMeshObject = Cast<ASkeletalMeshActor>(Object))
+		{
+			if (USkeletalMeshComponent *SkeletalMeshComponent = SkeletalMeshObject->GetSkeletalMeshComponent())
+			{
+				URoboAnim *RoboAnim = Cast<URoboAnim>(SkeletalMeshComponent->GetAnimInstance());
+				if (RoboAnim == nullptr)
+				{
+					UE_LOG(LogObjectController, Error, TEXT("Owner of %s does not have URoboAnim"), *GetName())
+					return;
+				}
+
+				for (const TPair<FString, FJoint> &DesiredObjectJointPosition : DesiredObjectJointPositions)
+				{
+					if (RoboAnim->JointPositions.Contains(DesiredObjectJointPosition.Value.BoneName))
+					{
+						RoboAnim->JointPositions[DesiredObjectJointPosition.Value.BoneName] = DesiredObjectJointPosition.Value.JointPosition;
+					}
+				}
+			}
+		}
+
 		const FVector LineStart = Object->GetActorLocation();
 		if (bShowLinearVelocity)
 		{
@@ -154,15 +178,17 @@ void UObjectController::MoveObjectByMujoco(AActor *Object, const mujoco_msgs::Ob
 
 void UObjectController::MoveObjectByMujoco(AActor *Object, const mujoco_msgs::ObjectState &ObjectState)
 {
-	if (AStaticMeshActor *StaticMeshObject = Cast<AStaticMeshActor>(Object))
+	if (Object != nullptr)
 	{
 		const FVector Location = FConversions::ROSToU(ObjectState.GetPose().GetPosition().GetVector());
 		const FQuat Rotation = FConversions::ROSToU(ObjectState.GetPose().GetOrientation().GetQuat());
-		if (!StaticMeshObject->GetActorLocation().Equals(Location) || !StaticMeshObject->GetActorRotation().Equals(Rotation.Rotator()))
+		if (!Object->GetActorLocation().Equals(Location) || !Object->GetActorRotation().Equals(Rotation.Rotator()))
 		{
-			StaticMeshObject->SetActorLocationAndRotation(Location, Rotation);
+			Object->SetActorLocationAndRotation(Location, Rotation);
 		}
-
+	}
+	if (AStaticMeshActor *StaticMeshObject = Cast<AStaticMeshActor>(Object))
+	{
 		UStaticMeshComponent *StaticMeshComponent = StaticMeshObject->GetStaticMeshComponent();
 		if (StaticMeshComponent->Mobility == EComponentMobility::Static)
 		{
@@ -170,10 +196,6 @@ void UObjectController::MoveObjectByMujoco(AActor *Object, const mujoco_msgs::Ob
 		}
 		StaticMeshComponent->SetPhysicsLinearVelocity(FConversions::ROSToU(ObjectState.GetVelocity().GetLinear().GetVector()));
 		StaticMeshComponent->SetPhysicsAngularVelocityInRadians(StaticMeshObject->GetActorRotation().RotateVector(ObjectState.GetVelocity().GetAngular().GetVector()) * FVector(-1, 1, -1));
-	}
-	else
-	{
-		UE_LOG(LogObjectController, Error, TEXT("Object is nullptr"))
 	}
 }
 
@@ -192,7 +214,7 @@ void UObjectController::MoveObjectByMarker(AActor *Object, const visualization_m
 void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco)
 {
 	AsyncTask(ENamedThreads::GameThread, [ObjectStatus, bAddObjectInMujoco, this]()
-						{  
+						{
 							FString ObjectName = ObjectStatus.GetInfo().GetName();
 							const FTransform Transform = GetTransform(ObjectStatus);
 
@@ -203,7 +225,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							FString MeshPath;
 							FString MeshTypeString;
 							bool bIsSkeletalMesh = false;
-							
+
 							if (ObjectStatus.GetInfo().GetType() == mujoco_msgs::ObjectInfo::MESH)
 							{
 								MeshTypeString = TEXT("Mesh");
@@ -224,9 +246,9 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									return;
 								}
 							}
-							
+
 							AActor *Object;
-							if (!bIsSkeletalMesh)							
+							if (!bIsSkeletalMesh)
 							{
 								Object = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FConversions::ROSToU(Transform), SpawnParameters);
 								UStaticMeshComponent *StaticMeshComponent = Cast<AStaticMeshActor>(Object)->GetStaticMeshComponent();
@@ -260,11 +282,15 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									StaticMeshComponent->SetStaticMesh(StaticMesh);
 									if (ObjectStatus.GetInfo().GetType() != mujoco_msgs::ObjectInfo::MESH)
 									{
-										if (ColorMap.Find(FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())))
+										const FVector4 Color = ObjectStatus.GetInfo().GetColor().GetColor();
+										if (!Color.Equals(FVector4()) && ColorMap.Find(FLinearColor(Color)))
 										{
-											FString ColorName = TEXT("M_") + ColorMap[FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())];
+											FString ColorName = TEXT("M_") + ColorMap[FLinearColor(Color)];
 											UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
-											StaticMeshComponent->SetMaterial(0, Material);
+											for (int32 i = 0; i < StaticMeshComponent->GetMaterials().Num(); i++)
+											{
+												StaticMeshComponent->SetMaterial(i, Material);
+											}
 										}
 									}
 								}
@@ -278,7 +304,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									StaticMeshComponent->SetMobility(EComponentMobility::Static);
 									StaticMeshComponent->SetSimulatePhysics(false);
 								}
-								
+
 								StaticMeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 								StaticMeshComponent->SetGenerateOverlapEvents(true);
 								StaticMeshComponent->RegisterComponent();
@@ -294,25 +320,74 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 								if (SkeletalMesh != nullptr)
 								{
 									SkeletalMeshComponent->SetSkeletalMesh(SkeletalMesh);
-									if (ColorMap.Find(FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())))
+									const FVector4 Color = ObjectStatus.GetInfo().GetColor().GetColor();
+									if (!Color.Equals(FVector4()) && ColorMap.Find(FLinearColor(Color)))
 									{
 										FString ColorName = TEXT("M_") + ColorMap[FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())];
 										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
-										SkeletalMeshComponent->SetMaterial(0, Material);
+										for (int32 i = 0; i < SkeletalMeshComponent->GetMaterials().Num(); i++)
+										{
+											SkeletalMeshComponent->SetMaterial(i, Material);
+										}
 									}
+								}
+								
+								FString BaseFileName = FPaths::GetBaseFilename(ObjectStatus.GetInfo().GetMesh(), true);
+								FString BaseDirName = FPaths::GetPath(ObjectStatus.GetInfo().GetMesh());
+								BaseFileName += "_anim";
+								FString AnimPath = TEXT("AnimBlueprint'") + BaseDirName + TEXT("/") + BaseFileName + "." + BaseFileName + TEXT("'");
+
+								if (UObject* LoadedObject = StaticLoadObject(UObject::StaticClass(), nullptr, *AnimPath))
+								{
+									UBlueprint* CastedBlueprint = Cast<UBlueprint>(LoadedObject);
+									if (CastedBlueprint != nullptr && CastedBlueprint->GeneratedClass->IsChildOf(URoboAnim::StaticClass()))
+									{
+										SkeletalMeshComponent->SetAnimInstanceClass(CastedBlueprint->GeneratedClass);
+									}
+									else
+									{
+										UE_LOG(LogObjectController, Warning, TEXT("%s is not URoboAnim"), *LoadedObject->GetName())
+									}
+								}
+								else
+								{
+									UE_LOG(LogObjectController, Warning, TEXT("%s not found"), *AnimPath)
 								}
 
 								SkeletalMeshComponent->RegisterComponent();
-							}
-							
-							Object->Tags.Add(*MeshTypeString); 
+
+								if (URoboAnim *RoboAnim = Cast<URoboAnim>(SkeletalMeshComponent->GetAnimInstance()))
+								{
+									TArray<FName> BoneNames;
+									SkeletalMeshComponent->GetBoneNames(BoneNames);
+									TMap<FString, EJointType> BoneTails = {{TEXT("_continuous_bone"), EJointType::Continuous}, {TEXT("_prismatic_bone"), EJointType::Prismatic}, {TEXT("_revolute_bone"), EJointType::Revolute}};
+									for (const FName &BoneName : BoneNames)
+									{
+										for (const TPair<FString, EJointType> &BoneTail : BoneTails)
+										{
+											if (BoneName.ToString().Contains(BoneTail.Key, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+											{
+												FString JointName = BoneName.ToString();
+												JointName.RemoveFromEnd(BoneTail.Key);
+												DesiredObjectJointPositions.Add(JointName, FJoint(BoneName, BoneTail.Value));
+											}
+										}
+									}
+									
+									RoboAnim->NativeBeginPlay();
+								}
+								}
 								
-							ObjectsInUnreal.Add(Object); 
-							
-							if (bAddObjectInMujoco)
-							{
-								ObjectsInMujoco.Add(Object);
-							} });
+								Object->SetActorLabel(ObjectName);
+								
+								Object->Tags.Add(*MeshTypeString); 
+									
+								ObjectsInUnreal.Add(Object); 
+								
+								if (bAddObjectInMujoco)
+								{
+									ObjectsInMujoco.Add(Object);
+								} });
 }
 
 bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatus &ObjectStatus, const bool bAddObjectInMujoco)
@@ -328,4 +403,12 @@ bool UObjectController::SpawnOrMoveObjectByMujoco(const mujoco_msgs::ObjectStatu
 		return true;
 	}
 	return false;
+}
+
+void UObjectController::SetDesiredObjectJointPositionFromROS(const FString &JointName, const float DesiredObjectJointPosition)
+{
+  if (DesiredObjectJointPositions.Contains(JointName))
+  {
+    DesiredObjectJointPositions[JointName].SetDesiredJointPositionFromROS(DesiredObjectJointPosition);
+  }
 }

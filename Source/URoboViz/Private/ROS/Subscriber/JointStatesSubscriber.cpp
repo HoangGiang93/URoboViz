@@ -39,22 +39,22 @@ FJointStatesSubscriberCallback::FJointStatesSubscriberCallback(
 
 TSharedPtr<FROSBridgeMsg> FJointStatesSubscriberCallback::ParseMessage(TSharedPtr<FJsonObject> JsonObject) const
 {
-  TSharedPtr<sensor_msgs::JointState> JointState =
+  TSharedPtr<sensor_msgs::JointState> JointStates =
       MakeShareable<sensor_msgs::JointState>(new sensor_msgs::JointState());
 
-  JointState->FromJson(JsonObject);
+  JointStates->FromJson(JsonObject);
 
-  return StaticCastSharedPtr<FROSBridgeMsg>(JointState);
+  return StaticCastSharedPtr<FROSBridgeMsg>(JointStates);
 }
 
 void FJointStatesSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
 {
   if (JointController)
   {
-    TSharedPtr<sensor_msgs::JointState> JointState = StaticCastSharedPtr<sensor_msgs::JointState>(Msg);
-    for (int32 i = 0; i < JointState->Names.Num(); i++)
+    TSharedPtr<sensor_msgs::JointState> JointStates = StaticCastSharedPtr<sensor_msgs::JointState>(Msg);
+    for (int32 i = 0; i < JointStates->Names.Num(); i++)
     {
-      JointController->SetDesiredJointPositionFromROS(JointState->GetName()[i], JointState->GetPosition()[i]);
+      JointController->SetDesiredJointPositionFromROS(JointStates->GetName()[i], JointStates->GetPosition()[i]);
     }
   }
 }

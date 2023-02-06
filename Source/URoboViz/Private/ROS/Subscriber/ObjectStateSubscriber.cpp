@@ -50,7 +50,7 @@ void FObjectStateSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
   {
     TSharedPtr<mujoco_msgs::ObjectState> ObjectState = StaticCastSharedPtr<mujoco_msgs::ObjectState>(Msg);
 
-    if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(ObjectController->GetObjectInMujoco(ObjectState->GetName())))
+    if (AActor *Object = ObjectController->GetObjectInMujoco(ObjectState->GetName()))
     {
       ObjectController->MoveObjectByMujoco(Object, *ObjectState);
     }

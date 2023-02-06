@@ -50,7 +50,7 @@ void FObjectMarkerSubscriberCallback::Callback(TSharedPtr<FROSBridgeMsg> Msg)
     TSharedPtr<visualization_msgs::Marker> ObjectMarker = StaticCastSharedPtr<visualization_msgs::Marker>(Msg);
 
     const FString ObjectName = ObjectMarker->GetNamespace();
-    if (AStaticMeshActor *Object = Cast<AStaticMeshActor>(ObjectController->GetObjectInMujoco(ObjectName)))
+    if (AActor *Object = ObjectController->GetObjectInMujoco(ObjectName))
     {
       ObjectController->MoveObjectByMarker(Object, *ObjectMarker);
     }

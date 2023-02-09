@@ -22,7 +22,8 @@ public class URoboViz : ModuleRules
         "Json",
         "JsonUtilities",
         "UConversions",
-        "AnimGraphRuntime"
+        "AnimGraphRuntime",
+        "AssetRegistry"
       }
       );
 

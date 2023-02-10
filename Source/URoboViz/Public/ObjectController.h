@@ -67,6 +67,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSet<AActor *> ObjectsInUnreal;
 
+	UPROPERTY(EditAnywhere)
+	TMap<FString, TSubclassOf<UAnimInstance>> RoboAnims;
+
 private:
 	TMap<FLinearColor, FString> ColorMap;
 

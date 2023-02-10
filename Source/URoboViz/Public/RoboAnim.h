@@ -7,6 +7,10 @@
 #include "RoboAnim.generated.h"
 // clang-format on
 
+/**
+ * @brief AnimInstance for robot-like object
+ * 
+ */
 UCLASS()
 class UROBOVIZ_API URoboAnim : public UAnimInstance
 {

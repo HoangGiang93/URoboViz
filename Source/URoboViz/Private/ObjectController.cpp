@@ -130,11 +130,12 @@ AActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
 {
 	for (AActor *const &Object : ObjectsInMujoco)
 	{
-		if (Object != nullptr && Object->GetName().Compare(ObjectName) == 0)
+		if (Object != nullptr && Object->GetName().Compare(ObjectName, ESearchCase::IgnoreCase) == 0)
 		{
 			return Object;
 		}
 	}
+	UE_LOG(LogObjectController, Warning, TEXT("%s not found, try to capitalize first letter"), *ObjectName)
 	return nullptr;
 }
 
@@ -223,7 +224,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							FString MeshPath;
 							FString MeshTypeString;
 
-							UClass *ActorClass = nullptr;
+							UClass *ActorClass = AStaticMeshActor::StaticClass();
 							UStaticMesh *StaticMesh = nullptr;
 							USkeletalMesh *SkeletalMesh = nullptr;
 
@@ -236,26 +237,20 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 								FString SkeletalMeshPath = TEXT("SkeletalMesh'") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
 								SkeletalMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *SkeletalMeshPath));
 
-								// FString BlueprintActorPath = TEXT("Blueprint'") + ObjectStatus.GetInfo().GetMesh() + TEXT("'");
-								// UBlueprint* BP_Object = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), nullptr, *BlueprintActorPath));
-
 								if (StaticMesh != nullptr)
 								{
 									ActorClass = AStaticMeshActor::StaticClass();
 									MeshPath = StaticMeshPath;
 								}
 								else if (SkeletalMesh != nullptr)
-								{
+								{									
 									ActorClass = ASkeletalMeshActor::StaticClass();
 									MeshPath = SkeletalMeshPath;
 								}
-								// else if (BP_Object != nullptr)
-								// {
-								// 	ActorClass = BP_Object->GeneratedClass;
-								// }
 								else
 								{
-									UE_LOG(LogObjectController, Warning, TEXT("File %s not exists"), *ObjectStatus.GetInfo().GetMesh())
+									ActorClass = nullptr;
+									UE_LOG(LogObjectController, Warning, TEXT("File %s does not exist"), *ObjectStatus.GetInfo().GetMesh())
 									return;
 								}
 							}
@@ -289,7 +284,6 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									break;
 								}
 
-								StaticMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *MeshPath));
 								if (StaticMesh != nullptr)
 								{
 									StaticMeshComponent->SetStaticMesh(StaticMesh);
@@ -343,37 +337,15 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 										}
 									}
 								}
-								
-								FString BaseFileName = FPaths::GetBaseFilename(ObjectStatus.GetInfo().GetMesh(), true);
-								FString BaseDirName = FPaths::GetPath(ObjectStatus.GetInfo().GetMesh());
-								BaseFileName += "_anim";
-								FString AnimPath = TEXT("AnimBlueprint'") + BaseDirName + TEXT("/") + BaseFileName + "." + BaseFileName + TEXT("'");
 
-								if (RoboAnims.Contains(AnimPath))
+								if (RoboAnims.Contains(MeshPath))
 								{
-									SkeletalMeshComponent->SetAnimInstanceClass(RoboAnims[AnimPath]);
+									SkeletalMeshComponent->SetAnimInstanceClass(RoboAnims[MeshPath]);
 								}
 								else
 								{
-									UE_LOG(LogObjectController, Warning, TEXT("%s not found"), *AnimPath)
+									UE_LOG(LogObjectController, Warning, TEXT("RoboAnim of %s not found"), *MeshPath)
 								}
-
-								// if (UObject* LoadedObject = StaticLoadObject(UObject::StaticClass(), nullptr, *AnimPath))
-								// {
-								// 	UBlueprint* CastedBlueprint = Cast<UBlueprint>(LoadedObject);
-								// 	if (CastedBlueprint != nullptr && CastedBlueprint->GeneratedClass->IsChildOf(URoboAnim::StaticClass()))
-								// 	{
-								// 		SkeletalMeshComponent->SetAnimInstanceClass(CastedBlueprint->GeneratedClass);
-								// 	}
-								// 	else
-								// 	{
-								// 		UE_LOG(LogObjectController, Warning, TEXT("%s is not URoboAnim"), *LoadedObject->GetName())
-								// 	}
-								// }
-								// else
-								// {
-								// 	UE_LOG(LogObjectController, Warning, TEXT("%s not found"), *AnimPath)
-								// }
 
 								SkeletalMeshComponent->RegisterComponent();
 
@@ -399,80 +371,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									RoboAnim->NativeBeginPlay();
 								}
 							}
-							// else if (ActorClass != nullptr)							
-							// {
-							// 	Object = GetWorld()->SpawnActor<AActor>(ActorClass, FConversions::ROSToU(Transform), SpawnParameters);
 
-							// 	if (USkeletalMeshComponent *SkeletalMeshComponent = Cast<ASkeletalMeshActor>(Object)->GetSkeletalMeshComponent())
-							// 	{
-							// 		if (URoboAnim *RoboAnim = Cast<URoboAnim>(SkeletalMeshComponent->GetAnimInstance()))
-							// 		{
-							// 			TArray<FName> BoneNames;
-							// 			SkeletalMeshComponent->GetBoneNames(BoneNames);
-							// 			TMap<FString, EJointType> BoneTails = {{TEXT("_continuous_bone"), EJointType::Continuous}, {TEXT("_prismatic_bone"), EJointType::Prismatic}, {TEXT("_revolute_bone"), EJointType::Revolute}};
-							// 			DesiredObjectJointPositions.Add(ObjectName);
-							// 			for (const FName &BoneName : BoneNames)
-							// 			{
-							// 				for (const TPair<FString, EJointType> &BoneTail : BoneTails)
-							// 				{
-							// 					if (BoneName.ToString().Contains(BoneTail.Key, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
-							// 					{
-							// 						FString JointName = BoneName.ToString();
-							// 						JointName.RemoveFromEnd(BoneTail.Key);
-							// 						DesiredObjectJointPositions[ObjectName].Add(JointName, FJoint(BoneName, BoneTail.Value));
-							// 					}
-							// 				}
-							// 			}
-										
-							// 			RoboAnim->NativeBeginPlay();
-							// 		}
-							// 	}
-								
-
-								// SkeletalMeshComponent->UnregisterComponent();
-
-								// USkeletalMesh *SkeletalMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MeshPath));
-								// if (SkeletalMesh != nullptr)
-								// {
-								// 	SkeletalMeshComponent->SetSkeletalMesh(SkeletalMesh);
-								// 	const FVector4 Color = ObjectStatus.GetInfo().GetColor().GetColor();
-								// 	if (!Color.Equals(FVector4()) && ColorMap.Find(FLinearColor(Color)))
-								// 	{
-								// 		FString ColorName = TEXT("M_") + ColorMap[FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())];
-								// 		UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
-								// 		for (int32 i = 0; i < SkeletalMeshComponent->GetMaterials().Num(); i++)
-								// 		{
-								// 			SkeletalMeshComponent->SetMaterial(i, Material);
-								// 		}
-								// 	}
-								// }
-								
-								// FString BaseFileName = FPaths::GetBaseFilename(ObjectStatus.GetInfo().GetMesh(), true);
-								// FString BaseDirName = FPaths::GetPath(ObjectStatus.GetInfo().GetMesh());
-								// BaseFileName += "_anim";
-								// FString AnimPath = TEXT("AnimBlueprint'") + BaseDirName + TEXT("/") + BaseFileName + "." + BaseFileName + TEXT("_C'");
-
-								// if (UObject* LoadedObject = StaticLoadObject(UObject::StaticClass(), nullptr, *AnimPath))
-								// {
-								// 	UBlueprint* CastedBlueprint = Cast<UBlueprint>(LoadedObject);
-								// 	if (CastedBlueprint != nullptr && CastedBlueprint->GeneratedClass->IsChildOf(URoboAnim::StaticClass()))
-								// 	{
-								// 		SkeletalMeshComponent->SetAnimInstanceClass(CastedBlueprint->GeneratedClass);
-								// 	}
-								// 	else
-								// 	{
-								// 		UE_LOG(LogObjectController, Warning, TEXT("%s is not URoboAnim"), *LoadedObject->GetName())
-								// 	}
-								// }
-								// else
-								// {
-								// 	UE_LOG(LogObjectController, Warning, TEXT("%s not found"), *AnimPath)
-								// }
-
-								// SkeletalMeshComponent->RegisterComponent();
-
-								
-							// }
 #if WITH_EDITOR
 								Object->SetActorLabel(ObjectName);
 #endif

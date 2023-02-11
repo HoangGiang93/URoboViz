@@ -19,7 +19,7 @@ static FTransform GetTransform(const mujoco_msgs::ObjectStatus &ObjectStatus)
 {
 	const FVector Location = ObjectStatus.GetPose().GetPosition().GetVector();
 	const FRotator Rotation = ObjectStatus.GetPose().GetOrientation().GetQuat().Rotator();
-	const FVector Scale = ObjectStatus.GetInfo().GetSize();
+	const FVector Scale = ObjectStatus.GetInfo().GetSize().Equals(FVector(0.f)) ? FVector(1.f) : ObjectStatus.GetInfo().GetSize();
 	return FTransform(Rotation, Location, Scale);
 }
 
@@ -27,7 +27,7 @@ static FTransform GetTransform(const visualization_msgs::Marker &ObjectMarker)
 {
 	const FVector Location = ObjectMarker.GetPose().GetPosition().GetVector();
 	const FRotator Rotation = ObjectMarker.GetPose().GetOrientation().GetQuat().Rotator();
-	const FVector Scale = ObjectMarker.GetScale().GetVector();
+	const FVector Scale = ObjectMarker.GetScale().GetVector().Equals(FVector(0.f)) ? FVector(1.f) : ObjectMarker.GetScale().GetVector();
 	return FTransform(Rotation, Location, Scale);
 }
 

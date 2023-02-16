@@ -74,7 +74,7 @@ protected:
 	virtual void Init() override;
 
 public:
-	void SetDesiredJointPositionFromROS(const FString &JointName, const float DesiredJointPosition);
+	void SetDesiredJointPositionFromROS(FString JointName, const float DesiredJointPosition);
 
 private:
 	UPROPERTY(EditAnywhere)

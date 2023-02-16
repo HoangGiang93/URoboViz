@@ -59,8 +59,9 @@ void UJointController::Tick()
   }
 }
 
-void UJointController::SetDesiredJointPositionFromROS(const FString &JointName, const float DesiredJointPosition)
+void UJointController::SetDesiredJointPositionFromROS(FString JointName, const float DesiredJointPosition)
 {
+  JointName = JointName.Replace(TEXT(" "), TEXT("-"));
   if (DesiredJointPositions.Contains(JointName))
   {
     DesiredJointPositions[JointName].SetDesiredJointPositionFromROS(DesiredJointPosition);

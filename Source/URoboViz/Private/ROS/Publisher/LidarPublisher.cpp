@@ -30,8 +30,24 @@ void ULidarPublisher::Publish()
   {
     TSharedPtr<sensor_msgs::LaserScan> LaserScanMsg =
         MakeShareable(new sensor_msgs::LaserScan());
+    
+    FROSTime ROSTime = FROSTime();
 
-    LaserScanMsg->SetHeader(std_msgs::Header(Seq++, FROSTime(), FrameId));
+    /************************************
+     *  BEGIN FIX BUG TF_REPEATED_DATA  *
+     ************************************/
+    static int32 UniqueInt = 0;
+    UniqueInt++;
+    if (UniqueInt == 1000)
+    {
+      UniqueInt = 0;
+    }
+    ROSTime.NSecs += UniqueInt;
+    /************************************
+     *  END FIX BUG TF_REPEATED_DATA  *
+     ************************************/
+
+    LaserScanMsg->SetHeader(std_msgs::Header(Seq++, ROSTime, FrameId));
     LaserScanMsg->SetAngleMin(Lidar->AngleMin);
     LaserScanMsg->SetAngleMax(Lidar->AngleMax);
     LaserScanMsg->SetAngleIncrement(Lidar->AngleIncrement);

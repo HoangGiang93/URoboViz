@@ -3,7 +3,7 @@
 Unreal plugin for robot visualisation using ROS connecting with WebSockets. This plugin supports controlling robots built on SkeletalMeshActor and switching physics with an external physics engine [MuJoCo](https://mujoco.org/).
 
 ## Overview
-https://user-images.githubusercontent.com/64316740/162844451-ef9468df-f4e2-42d1-8d4f-78cd1200f979.mp4
+https://user-images.githubusercontent.com/64316740/235268851-fa43c940-2173-424b-9d42-6485c9b80f42.mp4
 
 ## Features
 - Combine photorealistic graphics from [Unreal Engine](https://www.unrealengine.com/en-US/) with advanced physics engine from [MuJoCo](https://mujoco.org/) in runtime

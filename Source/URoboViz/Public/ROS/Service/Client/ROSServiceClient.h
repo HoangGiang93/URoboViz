@@ -30,8 +30,6 @@ public:
   void CallService();
 
 public:
-  void Tick() override;
-
   virtual void Init() override;
 
 protected:

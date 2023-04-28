@@ -58,6 +58,5 @@ void ULidarPublisher::Publish()
     LaserScanMsg->SetRanges(Lidar->GetRanges());
 
     Handler->PublishMsg(CommonPublisherParameters.Topic, LaserScanMsg);
-    Handler->Process();
   }
 }

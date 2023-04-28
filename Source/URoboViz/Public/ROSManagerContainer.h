@@ -50,7 +50,4 @@ public:
 	void Deinit();
 
 	void Tick();
-
-private:
-	TSharedPtr<FROSBridgeHandler> Handler;
 };

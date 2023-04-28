@@ -49,7 +49,6 @@ void UTFPublisher::Publish()
   }
 
   Handler->PublishMsg(CommonPublisherParameters.Topic, TfMessage);
-  Handler->Process();
 
   Seq++;
 }

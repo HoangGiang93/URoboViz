@@ -135,7 +135,6 @@ AActor *UObjectController::GetObjectInMujoco(const FString &ObjectName) const
 			return Object;
 		}
 	}
-	UE_LOG(LogObjectController, Warning, TEXT("%s not found, try to capitalize first letter"), *ObjectName)
 	return nullptr;
 }
 
@@ -216,7 +215,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 	AsyncTask(ENamedThreads::GameThread, [ObjectStatus, bAddObjectInMujoco, this]()
 						{
 							FString ObjectName = ObjectStatus.GetInfo().GetName();
-							const FTransform Transform = GetTransform(ObjectStatus);
+							FTransform Transform = GetTransform(ObjectStatus);
 
 							FActorSpawnParameters SpawnParameters;
 							SpawnParameters.Name = FName(ObjectName);
@@ -254,11 +253,16 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									return;
 								}
 							}
+							else
+							{
+								Transform = Transform.GetScaled(2.f);
+							}
+							FConversions::ROSToU(Transform);
 
 							AActor *Object = nullptr;
 							if (ActorClass == AStaticMeshActor::StaticClass())
 							{
-								Object = GetWorld()->SpawnActor<AStaticMeshActor>(ActorClass, FConversions::ROSToU(Transform), SpawnParameters);
+								Object = GetWorld()->SpawnActor<AStaticMeshActor>(ActorClass, Transform, SpawnParameters);
 								UStaticMeshComponent *StaticMeshComponent = Cast<AStaticMeshActor>(Object)->GetStaticMeshComponent();
 
 								StaticMeshComponent->UnregisterComponent();
@@ -284,6 +288,11 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									break;
 								}
 
+								if (StaticMesh == nullptr)
+								{
+									StaticMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *MeshPath));
+								}
+
 								if (StaticMesh != nullptr)
 								{
 									StaticMeshComponent->SetStaticMesh(StaticMesh);
@@ -301,9 +310,14 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 										}
 									}
 								}
+
+								StaticMeshComponent->SetMassOverrideInKg(NAME_None, ObjectStatus.GetInfo().GetInertial().GetM(), true);
+								StaticMeshComponent->SetCenterOfMass(ObjectStatus.GetInfo().GetInertial().GetCom().GetVector(), NAME_None);
+
 								if (ObjectStatus.GetInfo().GetMovable())
 								{
 									StaticMeshComponent->SetMobility(EComponentMobility::Movable);
+									StaticMeshComponent->SetEnableGravity(!bAddObjectInMujoco);
 									StaticMeshComponent->SetSimulatePhysics(!bAddObjectInMujoco);
 								}
 								else
@@ -318,7 +332,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 							}
 							else if (ActorClass == ASkeletalMeshActor::StaticClass())
 							{
-								Object = GetWorld()->SpawnActor<ASkeletalMeshActor>(ActorClass, FConversions::ROSToU(Transform), SpawnParameters);
+								Object = GetWorld()->SpawnActor<ASkeletalMeshActor>(ActorClass, Transform, SpawnParameters);
 								USkeletalMeshComponent *SkeletalMeshComponent = Cast<ASkeletalMeshActor>(Object)->GetSkeletalMeshComponent();
 
 								SkeletalMeshComponent->UnregisterComponent();

@@ -5,13 +5,6 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogROSBase, Log, All);
 
-void UROSBase::Connect(const TSharedPtr<FROSBridgeHandler> &InHandler)
-{
-  Handler = InHandler;
-
-  Init();
-}
-
 void UROSBase::Connect(const FString &Host, const int32 Port)
 {
   Handler = MakeShareable<FROSBridgeHandler>(new FROSBridgeHandler(Host, Port));

@@ -16,8 +16,6 @@ class UROBOVIZ_API UROSBase : public UObject
 public:
   void Connect(const FString &Host, const int32 Port);
 
-  void Connect(const TSharedPtr<FROSBridgeHandler> &InHandler);
-
   void Disconnect();
 
   virtual void Tick() {}

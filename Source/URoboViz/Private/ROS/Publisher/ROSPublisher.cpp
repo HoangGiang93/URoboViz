@@ -23,7 +23,7 @@ void UROSPublisher::Tick()
 {
   if (Handler.IsValid())
   {
-    if ((FROSTime::Now().GetTimeAsDouble() - PublishTime.GetTimeAsDouble()) > 1 / CommonPublisherParameters.PublishRate)
+    if ((FROSTime::Now().GetTimeAsDouble() - PublishTime.GetTimeAsDouble()) > 1.f / CommonPublisherParameters.PublishRate)
     {
       Publish();
       PublishTime = FROSTime::Now();

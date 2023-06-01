@@ -48,6 +48,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "ROS Manager")
 	FROSManagerContainer ROSManager;
 
+	// UPROPERTY(EditAnywhere, Category = "ROS Manager")
+	// FROSManagerContainer ROSManager;
+
 	UPROPERTY(VisibleAnywhere, Category = "Object Controller")
 	UObjectController *ObjectController;
 };

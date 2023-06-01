@@ -13,9 +13,6 @@ void FZMQManagerContainer::Init()
 			continue;
 		}
 		ZMQPublisher->Connect(Host);
-	}
-	for (UZMQSubscriber *ZMQSubscriber : ZMQSubscribers)
-	{
 		if (ZMQSubscriber == nullptr)
 		{
 			continue;

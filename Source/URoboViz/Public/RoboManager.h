@@ -4,6 +4,7 @@
 
 #include "GameFramework/Actor.h"
 #include "ROSManagerContainer.h"
+#include "ZMQManagerContainer.h"
 #include "RoboManagerContainer.h"
 // clang-format off
 #include "RoboManager.generated.h"
@@ -48,8 +49,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "ROS Manager")
 	FROSManagerContainer ROSManager;
 
-	// UPROPERTY(EditAnywhere, Category = "ROS Manager")
-	// FROSManagerContainer ROSManager;
+	UPROPERTY(EditAnywhere, Category = "ZMQ Manager")
+	FZMQManagerContainer ZMQManager;
 
 	UPROPERTY(VisibleAnywhere, Category = "Object Controller")
 	UObjectController *ObjectController;

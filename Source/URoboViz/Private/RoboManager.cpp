@@ -29,6 +29,8 @@ void ARoboManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ROSManager.Deinit();
 
+	ZMQManager.Deinit();
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -48,6 +50,8 @@ void ARoboManager::Tick(float DeltaTime)
 
 	ROSManager.Tick();
 
+	ZMQManager.Tick();
+
 	ObjectController->Tick(DeltaTime);
 }
 
@@ -63,6 +67,8 @@ void ARoboManager::Init()
 	}
 
 	ROSManager.Init();
+
+	ZMQManager.Init();
 }
 
 URobotController *ARoboManager::GetController(const FString &ControllerName) const

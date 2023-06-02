@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
+// Copyright (c) 2023, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #pragma once
 
@@ -7,20 +7,22 @@
 #include "ZMQManagerContainer.generated.h"
 // clang-format on
 
-USTRUCT(Blueprintable)
-struct FZMQ
+UENUM()
+enum class EAttribute : uint8
 {
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 HeaderPort;
+	Position,
+	Quaternion,
+	Joint1D
+};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 DataPort;
+USTRUCT(Blueprintable)
+struct FAttributeContainer
+{
+	GENERATED_BODY()
 
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	class UZMQPublisher *Publisher;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	class UZMQSubscriber *Subscriber;
+	TArray<EAttribute> Attributes;
 };
 
 USTRUCT(Blueprintable)
@@ -33,12 +35,23 @@ public:
 	FString Host;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FZMQManagerContainer> Host;
+	int32 HeaderPort;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 DataPort;
+
+	UPROPERTY(EditAnywhere)
+	TMap<AActor *, FAttributeContainer> SendObjects;
+
+	UPROPERTY(EditAnywhere)
+	TMap<AActor *, FAttributeContainer> ReceiveObjects;
 
 public:
-	FROSManagerContainer()
+	FZMQManagerContainer()
 	{
-		Host = TEXT("127.0.0.1");
+		Host = TEXT("tcp://127.0.0.1");
+		HeaderPort = 7500;
+		DataPort = 7600;
 	}
 
 public:

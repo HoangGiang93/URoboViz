@@ -54,4 +54,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Object Controller")
 	UObjectController *ObjectController;
+
+private:
+	TFunction<void(float DeltaTime)> TickFunction;
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 // clang-format off
 #include "ZMQManagerContainer.generated.h"
 // clang-format on
@@ -35,10 +36,7 @@ public:
 	FString Host;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 HeaderPort;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 DataPort;
+	int32 Port;
 
 	UPROPERTY(EditAnywhere)
 	TMap<AActor *, FAttributeContainer> SendObjects;
@@ -50,12 +48,30 @@ public:
 	FZMQManagerContainer()
 	{
 		Host = TEXT("tcp://127.0.0.1");
-		HeaderPort = 7500;
-		DataPort = 7600;
+		Port = 7500;
 	}
 
+private:
+	TArray<TPair<AActor *, EAttribute>> SendDataArray;
+
+    TArray<TPair<AActor *, EAttribute>> ReceiveDataArray;
+
+	void* context;
+
+	void *socket_client;
+
+	size_t send_buffer_size = 1;
+
+	size_t receive_buffer_size = 1;
+
+	double *send_buffer;
+    
+	double *receive_buffer;
+
+	FString SocketClientAddr;
+
 public:
-	void Init();
+	bool Init();
 
 	void Deinit();
 

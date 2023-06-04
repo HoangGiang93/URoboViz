@@ -39,25 +39,12 @@ void ARoboManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	for (TPair<ASkeletalMeshActor *, FRoboManagerContainer> Robot : RobotManager)
-	{
-		if (Robot.Key == nullptr)
-		{
-			continue;
-		}
-		Robot.Value.Tick(DeltaTime);
-	}
-
-	ROSManager.Tick();
-
-	ZMQManager.Tick();
-
-	ObjectController->Tick(DeltaTime);
+	TickFunction(DeltaTime);
 }
 
 void ARoboManager::Init()
 {
-	for (TPair<ASkeletalMeshActor *, FRoboManagerContainer> Robot : RobotManager)
+	for (TPair<ASkeletalMeshActor *, FRoboManagerContainer> &Robot : RobotManager)
 	{
 		if (Robot.Key == nullptr)
 		{
@@ -68,7 +55,45 @@ void ARoboManager::Init()
 
 	ROSManager.Init();
 
-	ZMQManager.Init();
+	if (ZMQManager.Init())
+	{
+		TickFunction = [&](float DeltaTime)
+		{
+			for (TPair<ASkeletalMeshActor *, FRoboManagerContainer> &Robot : RobotManager)
+			{
+				if (Robot.Key == nullptr)
+				{
+					continue;
+				}
+				Robot.Value.Tick(DeltaTime);
+			}
+
+			ROSManager.Tick();
+
+			ZMQManager.Tick();
+
+			ObjectController->Tick(DeltaTime);
+		};
+	}
+	else
+	{
+		TickFunction = [&](float DeltaTime)
+		{
+			for (TPair<ASkeletalMeshActor *, FRoboManagerContainer> &Robot : RobotManager)
+			{
+				if (Robot.Key == nullptr)
+				{
+					continue;
+				}
+				Robot.Value.Tick(DeltaTime);
+			}
+
+			ROSManager.Tick();
+
+			ObjectController->Tick(DeltaTime);
+		};
+	}
+	
 }
 
 URobotController *ARoboManager::GetController(const FString &ControllerName) const

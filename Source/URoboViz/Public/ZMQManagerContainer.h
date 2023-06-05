@@ -70,8 +70,14 @@ private:
 
 	FString SocketClientAddr;
 
+private:
+	UPROPERTY(VisibleAnywhere)
+	bool IsEnable = false;
+
 public:
-	bool Init();
+	void Init();
+
+	void SendMetaData();
 
 	void Deinit();
 

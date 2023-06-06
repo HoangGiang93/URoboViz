@@ -41,7 +41,8 @@ UObjectController::UObjectController()
 			{FLinearColor(0.5, 0, 1, 1), TEXT("Purple")},
 			{FLinearColor(1, 0, 0, 1), TEXT("Red")},
 			{FLinearColor(1, 1, 0, 1), TEXT("Yellow")},
-			{FLinearColor(0.8, 0.1, 0, 1), TEXT("Orange")}};
+			{FLinearColor(0.8, 0.1, 0, 1), TEXT("Orange")},
+			{FLinearColor(0.1, 0.1, 0.1, 1), TEXT("Gray")}};
 }
 
 void UObjectController::Tick(float DeltaTime)

@@ -4,6 +4,7 @@
 
 #include <chrono>
 
+#include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMeshActor.h"
 #include "Conversions.h"
 #include "ZMQLibrary/zmq.hpp"
@@ -13,15 +14,63 @@ DEFINE_LOG_CATEGORY_STATIC(LogZMQManagerContainer, Log, All);
 
 void FZMQManagerContainer::Init()
 {
+    for (const TPair<AActor *, FAttributeContainer> &ReceiveObject : ReceiveObjects)
+    {
+        if (ReceiveObject.Key == nullptr)
+        {
+            UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore None Object in ReceiveObjects"))
+            continue;
+        }
+
+        UWorld* World = ReceiveObject.Key->GetWorld();
+
+        AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(ReceiveObject.Key);
+        if (StaticMeshActor == nullptr)
+        {
+            UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjects"), *StaticMeshActor->GetName())
+            continue;
+        }
+
+        UStaticMeshComponent *StaticMeshComponent = StaticMeshActor->GetStaticMeshComponent();
+        if (StaticMeshComponent == nullptr || StaticMeshComponent->GetStaticMesh() == nullptr)
+        {
+            UE_LOG(LogZMQManagerContainer, Warning, TEXT("StaticMeshActor %s in ReceiveObjects has None StaticMeshComponent"), *ReceiveObject.Key->GetName())
+            continue;
+        }
+
+        UMaterial *RedMaterial = Cast<UMaterial>(World->StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/M_Red.M_Red'"))));
+        for (int32 i = 0; i < StaticMeshComponent->GetMaterials().Num(); i++)
+        {
+            StaticMeshComponent->SetMaterial(i, RedMaterial);
+        }
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Name = *(ReceiveObject.Key->GetName() + TEXT("_ref"));
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        AStaticMeshActor *ReceiveObjectRef = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), ReceiveObject.Key->GetActorTransform(), SpawnParams);
+        if (ReceiveObjectRef == nullptr)
+        {
+            UE_LOG(LogZMQManagerContainer, Error, TEXT("Failed to spawn StaticMeshActor %s"), SpawnParams.Name)
+            continue;
+        }
+
+        ReceiveObjectRef->GetStaticMeshComponent()->SetStaticMesh(StaticMeshActor->GetStaticMeshComponent()->GetStaticMesh());
+        ReceiveObjectRef->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+        UMaterial *GrayMaterial = Cast<UMaterial>(World->StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/M_Red.M_Red'"))));
+        for (int32 i = 0; i < StaticMeshComponent->GetMaterials().Num(); i++)
+        {
+            StaticMeshComponent->SetMaterial(i, GrayMaterial);
+        }
+    }
+
     if (SendObjects.Num() > 0 || ReceiveObjects.Num() > 0)
     {
-        SendObjects.KeySort([](const AActor &ActorA, const AActor &ActorB){
-            return ActorB.GetName().Compare(ActorA.GetName()) > 0;
-        });
+        SendObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
+                            { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
 
-        ReceiveObjects.KeySort([](const AActor &ActorA, const AActor &ActorB){
-            return ActorB.GetName().Compare(ActorA.GetName()) > 0;
-        });
+        ReceiveObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
+                               { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
 
         UE_LOG(LogZMQManagerContainer, Log, TEXT("Initializing the socket connection..."))
 

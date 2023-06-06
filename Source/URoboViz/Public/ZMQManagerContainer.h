@@ -70,6 +70,8 @@ private:
 
 	FString SocketClientAddr;
 
+	TMap<AActor *, FAttributeContainer> ReceiveObjectRefs;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	bool IsEnable = false;

@@ -15,6 +15,14 @@ void FZMQManagerContainer::Init()
 {
     if (SendObjects.Num() > 0 || ReceiveObjects.Num() > 0)
     {
+        SendObjects.KeySort([](const AActor &ActorA, const AActor &ActorB){
+            return ActorB.GetName().Compare(ActorA.GetName()) > 0;
+        });
+
+        ReceiveObjects.KeySort([](const AActor &ActorA, const AActor &ActorB){
+            return ActorB.GetName().Compare(ActorA.GetName()) > 0;
+        });
+
         UE_LOG(LogZMQManagerContainer, Log, TEXT("Initializing the socket connection..."))
 
         context = zmq_ctx_new();
@@ -169,6 +177,10 @@ void FZMQManagerContainer::SendMetaData()
 void FZMQManagerContainer::Deinit()
 {
     UE_LOG(LogZMQManagerContainer, Log, TEXT("Deinitializing the socket connection..."))
+
+    const std::string close_data = "{}";
+
+    zmq_send(socket_client, close_data.c_str(), close_data.size(), 0);
 
     free(send_buffer);
     free(receive_buffer);

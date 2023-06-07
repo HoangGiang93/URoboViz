@@ -43,6 +43,13 @@ UObjectController::UObjectController()
 			{FLinearColor(1, 1, 0, 1), TEXT("Yellow")},
 			{FLinearColor(0.8, 0.1, 0, 1), TEXT("Orange")},
 			{FLinearColor(0.1, 0.1, 0.1, 1), TEXT("Gray")}};
+	
+}
+
+UMaterial *UObjectController::GetMaterial(const FLinearColor &Color) const
+{
+	const FString ColorName = TEXT("M_") + ColorMap[Color];
+	return Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
 }
 
 void UObjectController::Tick(float DeltaTime)
@@ -302,8 +309,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 										const FVector4 Color = ObjectStatus.GetInfo().GetColor().GetColor();
 										if (!Color.Equals(FVector4()) && ColorMap.Find(FLinearColor(Color)))
 										{
-											FString ColorName = TEXT("M_") + ColorMap[FLinearColor(Color)];
-											UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
+											UMaterial *Material = GetMaterial(FLinearColor(Color));
 											for (int32 i = 0; i < StaticMeshComponent->GetMaterials().Num(); i++)
 											{
 												StaticMeshComponent->SetMaterial(i, Material);
@@ -344,8 +350,7 @@ void UObjectController::SpawnObjectInUnreal(const mujoco_msgs::ObjectStatus &Obj
 									const FVector4 Color = ObjectStatus.GetInfo().GetColor().GetColor();
 									if (!Color.Equals(FVector4()) && ColorMap.Find(FLinearColor(Color)))
 									{
-										FString ColorName = TEXT("M_") + ColorMap[FLinearColor(ObjectStatus.GetInfo().GetColor().GetColor())];
-										UMaterial *Material = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/") + ColorName + TEXT(".") + ColorName + TEXT("'"))));
+										UMaterial *Material = GetMaterial(FLinearColor(Color));
 										for (int32 i = 0; i < SkeletalMeshComponent->GetMaterials().Num(); i++)
 										{
 											SkeletalMeshComponent->SetMaterial(i, Material);

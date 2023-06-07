@@ -1,78 +1,135 @@
 // Copyright (c) 2023, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
-#include "ZMQManagerContainer.h"
+#include "ZMQManager.h"
 
 #include <chrono>
 
-#include "UObject/ConstructorHelpers.h"
+#include "RoboManager.h"
 #include "Engine/StaticMeshActor.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "Conversions.h"
 #include "ZMQLibrary/zmq.hpp"
 #include "Json.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogZMQManagerContainer, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogZMQManager, Log, All);
 
-void FZMQManagerContainer::Init()
+UZMQManager::UZMQManager()
 {
+    Host = TEXT("tcp://127.0.0.1");
+    Port = 7500;
+    if (ARoboManager* RoboManager = Cast<ARoboManager>(GetOuter()))
+    {
+        ObjectController = RoboManager->GetObjectController();
+    }
+    else
+    {
+        UE_LOG(LogZMQManager, Warning, TEXT("Outer of %s is not ARoboManager"), *GetName())
+    }
+}
+
+void UZMQManager::Init()
+{
+    UWorld* World = GetWorld();
+    if (World == nullptr)
+    {
+        UE_LOG(LogZMQManager, Error, TEXT("World of %s is nullptr"), *GetName())
+        return;
+    }
+
     for (const TPair<AActor *, FAttributeContainer> &ReceiveObject : ReceiveObjects)
     {
         if (ReceiveObject.Key == nullptr)
         {
-            UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore None Object in ReceiveObjects"))
+            UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in ReceiveObjects."))
             continue;
         }
-
-        UWorld* World = ReceiveObject.Key->GetWorld();
 
         AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(ReceiveObject.Key);
         if (StaticMeshActor == nullptr)
         {
-            UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjects"), *StaticMeshActor->GetName())
+            UE_LOG(LogZMQManager, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjects."), *StaticMeshActor->GetName())
             continue;
         }
 
         UStaticMeshComponent *StaticMeshComponent = StaticMeshActor->GetStaticMeshComponent();
         if (StaticMeshComponent == nullptr || StaticMeshComponent->GetStaticMesh() == nullptr)
         {
-            UE_LOG(LogZMQManagerContainer, Warning, TEXT("StaticMeshActor %s in ReceiveObjects has None StaticMeshComponent"), *ReceiveObject.Key->GetName())
+            UE_LOG(LogZMQManager, Warning, TEXT("StaticMeshActor %s in ReceiveObjects has None StaticMeshComponent."), *ReceiveObject.Key->GetName())
             continue;
         }
+        if (!StaticMeshComponent->IsSimulatingPhysics())
+        {
+            UE_LOG(LogZMQManager, Warning, TEXT("StaticMeshActor %s has disabled physics, enabling physics."), *ReceiveObject.Key->GetName())
+            StaticMeshComponent->SetSimulatePhysics(true);
+        }
 
-        UMaterial *RedMaterial = Cast<UMaterial>(World->StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/M_Red.M_Red'"))));
+        UMaterial *RedMaterial = ObjectController->GetMaterial(FLinearColor(1, 0, 0, 1));
         for (int32 i = 0; i < StaticMeshComponent->GetMaterials().Num(); i++)
         {
             StaticMeshComponent->SetMaterial(i, RedMaterial);
         }
 
         FActorSpawnParameters SpawnParams;
+        SpawnParams.Template = StaticMeshActor;
         SpawnParams.Name = *(ReceiveObject.Key->GetName() + TEXT("_ref"));
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        AStaticMeshActor *ReceiveObjectRef = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), ReceiveObject.Key->GetActorTransform(), SpawnParams);
+        AActor *ReceiveObjectRef = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FTransform(), SpawnParams);
         if (ReceiveObjectRef == nullptr)
         {
-            UE_LOG(LogZMQManagerContainer, Error, TEXT("Failed to spawn StaticMeshActor %s"), SpawnParams.Name)
+            UE_LOG(LogZMQManager, Error, TEXT("Failed to spawn StaticMeshActor %s"), *SpawnParams.Name.ToString())
             continue;
         }
 
-        ReceiveObjectRef->GetStaticMeshComponent()->SetStaticMesh(StaticMeshActor->GetStaticMeshComponent()->GetStaticMesh());
-        ReceiveObjectRef->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        ReceiveObjectRef->SetActorLabel(SpawnParams.Name.ToString());
+        
+        AStaticMeshActor* StaticMeshActorRef = Cast<AStaticMeshActor>(ReceiveObjectRef);
 
-        UMaterial *GrayMaterial = Cast<UMaterial>(World->StaticLoadObject(UMaterial::StaticClass(), nullptr, *(TEXT("StaticMesh'/URoboViz/Assets/Materials/M_Red.M_Red'"))));
-        for (int32 i = 0; i < StaticMeshComponent->GetMaterials().Num(); i++)
+        UStaticMeshComponent *StaticMeshComponentRef = StaticMeshActorRef->GetStaticMeshComponent();
+        StaticMeshComponentRef->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+        UMaterial *GrayMaterial = ObjectController->GetMaterial(FLinearColor(0.1, 0.1, 0.1, 1));
+        for (int32 i = 0; i < StaticMeshComponentRef->GetMaterials().Num(); i++)
         {
-            StaticMeshComponent->SetMaterial(i, GrayMaterial);
+            StaticMeshComponentRef->SetMaterial(i, GrayMaterial);
         }
+        
+        UPhysicsConstraintComponent* PhysicsConstraint = NewObject<UPhysicsConstraintComponent>(StaticMeshActor);
+        PhysicsConstraint->AttachTo(StaticMeshActor->GetRootComponent(), NAME_None, EAttachLocation::KeepWorldPosition);
+        PhysicsConstraint->SetWorldLocation(StaticMeshActor->GetActorLocation());
+
+        PhysicsConstraint->ComponentName1.ComponentName = *StaticMeshActorRef->GetName();
+        PhysicsConstraint->ComponentName2.ComponentName = *StaticMeshActor->GetName();
+        PhysicsConstraint->ConstraintActor1 = StaticMeshActorRef;
+        PhysicsConstraint->ConstraintActor2 = StaticMeshActor;
+        PhysicsConstraint->ConstraintInstance.Pos1 = FVector();
+        PhysicsConstraint->ConstraintInstance.Pos2 = FVector();
+
+        PhysicsConstraint->SetConstrainedComponents(StaticMeshComponentRef, NAME_None, StaticMeshComponent, NAME_None);
+
+        // Enable linear constraint in all axes
+        PhysicsConstraint->SetLinearXLimit(ELinearConstraintMotion::LCM_Locked, 0.f);
+        PhysicsConstraint->SetLinearYLimit(ELinearConstraintMotion::LCM_Locked, 0.f);
+        PhysicsConstraint->SetLinearZLimit(ELinearConstraintMotion::LCM_Locked, 0.f);
+
+        // Enable angular constraint in all axes
+        PhysicsConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Locked, 0.f);
+        PhysicsConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Locked, 0.f);
+        PhysicsConstraint->SetAngularTwistLimit(EAngularConstraintMotion::ACM_Locked, 0.f);
+
+        PhysicsConstraint->RegisterComponent();
+
+        ReceiveObjectRefs.Add(ReceiveObjectRef, ReceiveObject.Value);
     }
 
-    if (SendObjects.Num() > 0 || ReceiveObjects.Num() > 0)
+    if (SendObjects.Num() > 0 || ReceiveObjectRefs.Num() > 0)
     {
         SendObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
                             { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
 
-        ReceiveObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
+        ReceiveObjectRefs.KeySort([](const AActor &ActorA, const AActor &ActorB)
                                { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
 
-        UE_LOG(LogZMQManagerContainer, Log, TEXT("Initializing the socket connection..."))
+        UE_LOG(LogZMQManager, Log, TEXT("Initializing the socket connection..."))
 
         context = zmq_ctx_new();
 
@@ -84,7 +141,7 @@ void FZMQManagerContainer::Init()
     }
 }
 
-void FZMQManagerContainer::SendMetaData()
+void UZMQManager::SendMetaData()
 {
     FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([&]()
                                                                          { const TMap<EAttribute, TArray<double>> AttributeMap =
@@ -104,7 +161,7 @@ void FZMQManagerContainer::SendMetaData()
         {
             if (SendObject.Key == nullptr)
             {
-                UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore None Object in SendObjects"))
+                UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in SendObjects"))
                 continue;
             }
 
@@ -138,30 +195,30 @@ void FZMQManagerContainer::SendMetaData()
         TSharedPtr<FJsonObject> MetaDataReceiveJson = MakeShareable(new FJsonObject);
         MetaDataJson->SetObjectField("receive", MetaDataReceiveJson);
 
-        for (const TPair<AActor *, FAttributeContainer> &ReceiveObject : ReceiveObjects)
+        for (const TPair<AActor *, FAttributeContainer> &ReceiveObjectRef : ReceiveObjectRefs)
         {
-            if (ReceiveObject.Key == nullptr)
+            if (ReceiveObjectRef.Key == nullptr)
             {
-                UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore None Object in ReceiveObjects"))
+                UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in ReceiveObjectRefs"))
                 continue;
             }
 
-            AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(ReceiveObject.Key);
+            AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(ReceiveObjectRef.Key);
             if (StaticMeshActor == nullptr)
             {
-                UE_LOG(LogZMQManagerContainer, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjects"), *ReceiveObject.Key->GetName())
+                UE_LOG(LogZMQManager, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjectRefs"), *ReceiveObjectRef.Key->GetName())
                 continue;
             }
             else if (StaticMeshActor->GetStaticMeshComponent() == nullptr)
             {
-                UE_LOG(LogZMQManagerContainer, Warning, TEXT("StaticMeshActor %s in ReceiveObjects has None StaticMeshComponent"), *ReceiveObject.Key->GetName())
+                UE_LOG(LogZMQManager, Warning, TEXT("StaticMeshActor %s in ReceiveObjectRefs has None StaticMeshComponent"), *ReceiveObjectRef.Key->GetName())
                 continue;
             }
 
             StaticMeshActor->GetStaticMeshComponent()->SetSimulatePhysics(false);
 
             TArray<TSharedPtr<FJsonValue>> AttributeJsonArray;
-            for (const EAttribute &Attribute : ReceiveObject.Value.Attributes)
+            for (const EAttribute &Attribute : ReceiveObjectRef.Value.Attributes)
             {
                 switch (Attribute)
                 {
@@ -181,17 +238,17 @@ void FZMQManagerContainer::SendMetaData()
                     break;
                 }
 
-                ReceiveDataArray.Add(TPair<AActor *, EAttribute>(ReceiveObject.Key, Attribute));
+                ReceiveDataArray.Add(TPair<AActor *, EAttribute>(ReceiveObjectRef.Key, Attribute));
                 receive_buffer_size += AttributeMap[Attribute].Num();
             }
-            MetaDataReceiveJson->SetArrayField(ReceiveObject.Key->GetActorLabel(), AttributeJsonArray);
+            MetaDataReceiveJson->SetArrayField(ReceiveObjectRef.Key->GetActorLabel(), AttributeJsonArray);
         }
 
         FString MetaDataString;
         TSharedRef<TJsonWriter<TCHAR>> Writer = TJsonWriterFactory<TCHAR>::Create(&MetaDataString);
         FJsonSerializer::Serialize(MetaDataJson.ToSharedRef(), Writer, true);
 
-        UE_LOG(LogZMQManagerContainer, Log, TEXT("%s"), *MetaDataString)
+        UE_LOG(LogZMQManager, Log, TEXT("%s"), *MetaDataString)
 
         // Send JSON string over ZMQ
         std::string meta_data_string;
@@ -208,24 +265,30 @@ void FZMQManagerContainer::SendMetaData()
         size_t buffer[2];
         zmq_recv(socket_client, buffer, sizeof(buffer), 0);
 
+        if (buffer == nullptr || (buffer + 1) == nullptr)
+        {
+            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: buffer is nullptr"), *SocketClientAddr)
+            return;
+        }
+
         if (buffer[0] != send_buffer_size || buffer[1] != receive_buffer_size)
         {
-            UE_LOG(LogZMQManagerContainer, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketClientAddr, buffer[0], send_buffer_size, buffer[1], receive_buffer_size)
+            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketClientAddr, buffer[0], send_buffer_size, buffer[1], receive_buffer_size)
         }
         else
         {
             send_buffer = (double *)calloc(send_buffer_size, sizeof(double));
             receive_buffer = (double *)calloc(receive_buffer_size, sizeof(double));
 
-            UE_LOG(LogZMQManagerContainer, Log, TEXT("Initialized the socket at %s successfully."), *SocketClientAddr);
+            UE_LOG(LogZMQManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketClientAddr);
             IsEnable = true;
         } },
                                                                          TStatId(), nullptr, ENamedThreads::AnyThread);
 }
 
-void FZMQManagerContainer::Deinit()
+void UZMQManager::Deinit()
 {
-    UE_LOG(LogZMQManagerContainer, Log, TEXT("Deinitializing the socket connection..."))
+    UE_LOG(LogZMQManager, Log, TEXT("Deinitializing the socket connection..."))
 
     const std::string close_data = "{}";
 
@@ -237,7 +300,7 @@ void FZMQManagerContainer::Deinit()
     zmq_disconnect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
 }
 
-void FZMQManagerContainer::Tick()
+void UZMQManager::Tick()
 {
     if (IsEnable)
     {

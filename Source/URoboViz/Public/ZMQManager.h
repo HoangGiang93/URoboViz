@@ -5,8 +5,10 @@
 #include "CoreMinimal.h"
 
 // clang-format off
-#include "ZMQManagerContainer.generated.h"
+#include "ZMQManager.generated.h"
 // clang-format on
+
+class UObjectController;
 
 UENUM()
 enum class EAttribute : uint8
@@ -26,8 +28,8 @@ public:
 	TArray<EAttribute> Attributes;
 };
 
-USTRUCT(Blueprintable)
-struct FZMQManagerContainer
+UCLASS(Blueprintable, DefaultToInstanced, collapsecategories, hidecategories = Object, editinlinenew)
+class UROBOVIZ_API UZMQManager : public UObject
 {
 	GENERATED_BODY()
 
@@ -45,18 +47,14 @@ public:
 	TMap<AActor *, FAttributeContainer> ReceiveObjects;
 
 public:
-	FZMQManagerContainer()
-	{
-		Host = TEXT("tcp://127.0.0.1");
-		Port = 7500;
-	}
+	UZMQManager();	
 
 private:
 	TArray<TPair<AActor *, EAttribute>> SendDataArray;
 
-    TArray<TPair<AActor *, EAttribute>> ReceiveDataArray;
+	TArray<TPair<AActor *, EAttribute>> ReceiveDataArray;
 
-	void* context;
+	void *context;
 
 	void *socket_client;
 
@@ -65,12 +63,14 @@ private:
 	size_t receive_buffer_size = 1;
 
 	double *send_buffer;
-    
+
 	double *receive_buffer;
 
 	FString SocketClientAddr;
 
 	TMap<AActor *, FAttributeContainer> ReceiveObjectRefs;
+
+	UObjectController *ObjectController;
 
 private:
 	UPROPERTY(VisibleAnywhere)

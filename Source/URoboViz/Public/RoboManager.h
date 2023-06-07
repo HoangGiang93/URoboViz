@@ -4,13 +4,14 @@
 
 #include "GameFramework/Actor.h"
 #include "ROSManagerContainer.h"
-#include "ZMQManagerContainer.h"
 #include "RoboManagerContainer.h"
 // clang-format off
 #include "RoboManager.generated.h"
 // clang-format on
 
 class UObjectController;
+
+class UZMQManager;
 
 UCLASS()
 class UROBOVIZ_API ARoboManager : public AActor
@@ -49,8 +50,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "ROS Manager")
 	FROSManagerContainer ROSManager;
 
-	UPROPERTY(EditAnywhere, Category = "ZMQ Manager")
-	FZMQManagerContainer ZMQManager;
+	UPROPERTY(VisibleAnywhere, Category = "ZMQ Manager")
+	UZMQManager *ZMQManager;
 
 	UPROPERTY(VisibleAnywhere, Category = "Object Controller")
 	UObjectController *ObjectController;

@@ -4,6 +4,7 @@
 #include "Animation/SkeletalMeshActor.h"
 #include "Conversions.h"
 #include "ObjectController.h"
+#include "ZMQManager.h"
 #include "mujoco_msgs/ObjectState.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogRoboManager, Log, All);
@@ -15,6 +16,8 @@ ARoboManager::ARoboManager()
 	PrimaryActorTick.bCanEverTick = true;
 
 	ObjectController = CreateDefaultSubobject<UObjectController>(TEXT("ObjectController"));
+
+	ZMQManager = CreateDefaultSubobject<UZMQManager>(TEXT("ZMQManager"));
 }
 
 // Called when the game starts or when spawned
@@ -29,7 +32,7 @@ void ARoboManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ROSManager.Deinit();
 
-	ZMQManager.Deinit();
+	ZMQManager->Deinit();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -50,7 +53,7 @@ void ARoboManager::Tick(float DeltaTime)
 
 	ROSManager.Tick();
 
-	ZMQManager.Tick();
+	ZMQManager->Tick();
 
 	ObjectController->Tick(DeltaTime);
 }
@@ -68,7 +71,7 @@ void ARoboManager::Init()
 
 	ROSManager.Init();
 
-	ZMQManager.Init();
+	ZMQManager->Init();
 }
 
 URobotController *ARoboManager::GetController(const FString &ControllerName) const

@@ -72,6 +72,8 @@ private:
 
 	UObjectController *ObjectController;
 
+	FGraphEventRef Task;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	bool IsEnable = false;

@@ -17,19 +17,32 @@ UZMQManager::UZMQManager()
 {
     Host = TEXT("tcp://127.0.0.1");
     Port = 7500;
-    if (ARoboManager* RoboManager = Cast<ARoboManager>(GetOuter()))
+}
+
+void UZMQManager::Init()
+{
+    if (SendObjects.Num() > 0)
+    {
+        SendObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
+                            { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
+    }
+    if (ReceiveObjects.Num() > 0)
+    {
+        ReceiveObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
+                               { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
+    }
+
+    if (ARoboManager *RoboManager = Cast<ARoboManager>(GetOuter()))
     {
         ObjectController = RoboManager->GetObjectController();
     }
     else
     {
         UE_LOG(LogZMQManager, Warning, TEXT("Outer of %s is not ARoboManager"), *GetName())
+        return;
     }
-}
 
-void UZMQManager::Init()
-{
-    UWorld* World = GetWorld();
+    UWorld *World = GetWorld();
     if (World == nullptr)
     {
         UE_LOG(LogZMQManager, Error, TEXT("World of %s is nullptr"), *GetName())
@@ -71,7 +84,7 @@ void UZMQManager::Init()
 
         FActorSpawnParameters SpawnParams;
         SpawnParams.Template = StaticMeshActor;
-        SpawnParams.Name = *(ReceiveObject.Key->GetName() + TEXT("_ref"));
+        SpawnParams.Name = *(ReceiveObject.Key->GetActorLabel() + TEXT("_ref"));
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
         AActor *ReceiveObjectRef = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FTransform(), SpawnParams);
         if (ReceiveObjectRef == nullptr)
@@ -81,21 +94,22 @@ void UZMQManager::Init()
         }
 
         ReceiveObjectRef->SetActorLabel(SpawnParams.Name.ToString());
-        
-        AStaticMeshActor* StaticMeshActorRef = Cast<AStaticMeshActor>(ReceiveObjectRef);
+
+        AStaticMeshActor *StaticMeshActorRef = Cast<AStaticMeshActor>(ReceiveObjectRef);
 
         UStaticMeshComponent *StaticMeshComponentRef = StaticMeshActorRef->GetStaticMeshComponent();
-        StaticMeshComponentRef->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        StaticMeshComponentRef->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        StaticMeshComponentRef->SetSimulatePhysics(false);
 
         UMaterial *GrayMaterial = ObjectController->GetMaterial(FLinearColor(0.1, 0.1, 0.1, 1));
         for (int32 i = 0; i < StaticMeshComponentRef->GetMaterials().Num(); i++)
         {
             StaticMeshComponentRef->SetMaterial(i, GrayMaterial);
         }
-        
-        UPhysicsConstraintComponent* PhysicsConstraint = NewObject<UPhysicsConstraintComponent>(StaticMeshActor);
-        PhysicsConstraint->AttachTo(StaticMeshActor->GetRootComponent(), NAME_None, EAttachLocation::KeepWorldPosition);
-        PhysicsConstraint->SetWorldLocation(StaticMeshActor->GetActorLocation());
+
+        UPhysicsConstraintComponent *PhysicsConstraint = NewObject<UPhysicsConstraintComponent>(StaticMeshActorRef);
+        PhysicsConstraint->AttachToComponent(StaticMeshComponentRef, FAttachmentTransformRules::KeepWorldTransform);
+        PhysicsConstraint->SetWorldLocation(StaticMeshActorRef->GetActorLocation());
 
         PhysicsConstraint->ComponentName1.ComponentName = *StaticMeshActorRef->GetName();
         PhysicsConstraint->ComponentName2.ComponentName = *StaticMeshActor->GetName();
@@ -123,12 +137,6 @@ void UZMQManager::Init()
 
     if (SendObjects.Num() > 0 || ReceiveObjectRefs.Num() > 0)
     {
-        SendObjects.KeySort([](const AActor &ActorA, const AActor &ActorB)
-                            { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
-
-        ReceiveObjectRefs.KeySort([](const AActor &ActorA, const AActor &ActorB)
-                               { return ActorB.GetName().Compare(ActorA.GetName()) > 0; });
-
         UE_LOG(LogZMQManager, Log, TEXT("Initializing the socket connection..."))
 
         context = zmq_ctx_new();
@@ -143,8 +151,8 @@ void UZMQManager::Init()
 
 void UZMQManager::SendMetaData()
 {
-    FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([&]()
-                                                                         { const TMap<EAttribute, TArray<double>> AttributeMap =
+    Task = FFunctionGraphTask::CreateAndDispatchWhenReady([&]()
+                                                          { const TMap<EAttribute, TArray<double>> AttributeMap =
         {
             {EAttribute::Position, {0.0, 0.0, 0.0}},
             {EAttribute::Quaternion, {1.0, 0.0, 0.0, 0.0}},
@@ -241,7 +249,10 @@ void UZMQManager::SendMetaData()
                 ReceiveDataArray.Add(TPair<AActor *, EAttribute>(ReceiveObjectRef.Key, Attribute));
                 receive_buffer_size += AttributeMap[Attribute].Num();
             }
-            MetaDataReceiveJson->SetArrayField(ReceiveObjectRef.Key->GetActorLabel(), AttributeJsonArray);
+
+            FString ReceiveObjectName = ReceiveObjectRef.Key->GetActorLabel();
+            ReceiveObjectName.RemoveFromEnd(TEXT("_ref"));
+            MetaDataReceiveJson->SetArrayField(ReceiveObjectName, AttributeJsonArray);
         }
 
         FString MetaDataString;
@@ -261,43 +272,81 @@ void UZMQManager::SendMetaData()
         }
         zmq_send(socket_client, meta_data_string.c_str(), meta_data_string.size(), 0);
 
-        // Receive buffer sizes over ZMQ
-        size_t buffer[2];
-        zmq_recv(socket_client, buffer, sizeof(buffer), 0);
+        // Receive buffer sizes and send_data (if exists) over ZMQ
+		double *buffer = (double *)calloc(send_buffer_size + 2, sizeof(double));
+		zmq_recv(socket_client, buffer, (send_buffer_size + 2) * sizeof(double), 0);
 
         if (buffer == nullptr || (buffer + 1) == nullptr)
         {
             UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: buffer is nullptr"), *SocketClientAddr)
             return;
         }
-
-        if (buffer[0] != send_buffer_size || buffer[1] != receive_buffer_size)
+        
+        size_t recv_buffer_size[2] = {(size_t)buffer[0], (size_t)buffer[1]};
+        if (recv_buffer_size[0] != send_buffer_size || recv_buffer_size[1] != receive_buffer_size)
         {
-            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketClientAddr, buffer[0], send_buffer_size, buffer[1], receive_buffer_size)
+            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketClientAddr, recv_buffer_size[0], send_buffer_size, recv_buffer_size[1], receive_buffer_size)
+            zmq_disconnect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
         }
         else
         {
+            if (buffer[2] < 0.0)
+            {
+                UE_LOG(LogZMQManager, Log, TEXT("Continue state on socket %s"), *SocketClientAddr)
+
+                double *buffer_addr = buffer + 3;
+
+                for (const TPair<AActor *, FAttributeContainer> &SendObject : SendObjects)
+                {
+                    if (SendObject.Key == nullptr)
+                    {
+                        UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in SendObjects"))
+                        continue;
+                    }
+
+                    TArray<TSharedPtr<FJsonValue>> AttributeJsonArray;
+                    for (const EAttribute Attribute : SendObject.Value.Attributes)
+                    {
+                        switch (Attribute)
+                        {
+                        case EAttribute::Position:
+                        {
+                            const float X = *buffer_addr++;
+                            const float Y = *buffer_addr++;
+                            const float Z = *buffer_addr++;
+                            const FVector LocationInUnreal = FConversions::ROSToU(FVector(X, Y, Z));
+                            SendObject.Key->SetActorLocation(LocationInUnreal);
+                            break;
+                        }
+
+                        case EAttribute::Quaternion:
+                        {
+                            const float W = *buffer_addr++;
+                            const float X = *buffer_addr++;
+                            const float Y = *buffer_addr++;
+                            const float Z = *buffer_addr++;
+                            const FQuat QuatInUnreal = FConversions::ROSToU(FQuat(X, Y, Z, W));
+                            SendObject.Key->SetActorRotation(QuatInUnreal);
+                            break;
+                        }
+
+                        case EAttribute::Joint1D:
+                            break;
+
+                        default:
+                            break;
+                        }
+                    }
+                }
+            }
+
+            UE_LOG(LogZMQManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketClientAddr)
+            UE_LOG(LogZMQManager, Log, TEXT("Start communication on %s (send: %ld, receive: %ld)"), *SocketClientAddr, send_buffer_size, receive_buffer_size)
             send_buffer = (double *)calloc(send_buffer_size, sizeof(double));
             receive_buffer = (double *)calloc(receive_buffer_size, sizeof(double));
-
-            UE_LOG(LogZMQManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketClientAddr);
             IsEnable = true;
         } },
-                                                                         TStatId(), nullptr, ENamedThreads::AnyThread);
-}
-
-void UZMQManager::Deinit()
-{
-    UE_LOG(LogZMQManager, Log, TEXT("Deinitializing the socket connection..."))
-
-    const std::string close_data = "{}";
-
-    zmq_send(socket_client, close_data.c_str(), close_data.size(), 0);
-
-    free(send_buffer);
-    free(receive_buffer);
-
-    zmq_disconnect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
+                                                          TStatId(), nullptr, ENamedThreads::AnyThread);
 }
 
 void UZMQManager::Tick()
@@ -342,6 +391,7 @@ void UZMQManager::Tick()
         if (*receive_buffer < 0)
         {
             IsEnable = false;
+            UE_LOG(LogZMQManager, Warning, TEXT("Stop communication on %s"), *SocketClientAddr)
             SendMetaData();
             return;
         }
@@ -376,5 +426,27 @@ void UZMQManager::Tick()
                 break;
             }
         }
+    }
+}
+
+void UZMQManager::Deinit()
+{
+    if (IsEnable)
+    {
+        UE_LOG(LogZMQManager, Log, TEXT("Deinitializing the socket connection..."))
+
+        const std::string close_data = "{}";
+
+        zmq_send(socket_client, close_data.c_str(), close_data.size(), 0);
+
+        free(send_buffer);
+        free(receive_buffer);
+
+        zmq_disconnect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
+    }
+    else if (Task.IsValid())
+    {
+        zmq_ctx_shutdown(context);
+        Task->Wait();
     }
 }

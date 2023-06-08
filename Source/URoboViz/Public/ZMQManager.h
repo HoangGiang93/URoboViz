@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <string>
 
 // clang-format off
 #include "ZMQManager.generated.h"
@@ -66,7 +67,9 @@ private:
 
 	double *receive_buffer;
 
-	FString SocketClientAddr;
+	FString SocketAddr;
+
+	std::string socket_addr;
 
 	TMap<AActor *, FAttributeContainer> ReceiveObjectRefs;
 

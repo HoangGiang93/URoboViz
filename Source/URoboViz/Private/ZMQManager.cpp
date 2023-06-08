@@ -142,8 +142,8 @@ void UZMQManager::Init()
         context = zmq_ctx_new();
 
         socket_client = zmq_socket(context, ZMQ_REQ);
-        SocketClientAddr = Host + ":" + FString::FromInt(Port);
-        zmq_connect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
+        SocketAddr = Host + ":" + FString::FromInt(Port);
+        socket_addr = StringCast<ANSICHAR>(*SocketAddr).Get();
 
         SendMetaData();
     }
@@ -151,9 +151,16 @@ void UZMQManager::Init()
 
 void UZMQManager::SendMetaData()
 {
+    zmq_disconnect(socket_client, socket_addr.c_str());
+    zmq_connect(socket_client, socket_addr.c_str());
+
+    SendDataArray.Empty();
+    ReceiveDataArray.Empty();
+
     Task = FFunctionGraphTask::CreateAndDispatchWhenReady([&]()
                                                           { const TMap<EAttribute, TArray<double>> AttributeMap =
         {
+
             {EAttribute::Position, {0.0, 0.0, 0.0}},
             {EAttribute::Quaternion, {1.0, 0.0, 0.0, 0.0}},
             {EAttribute::Joint1D, {0.0}}};
@@ -164,6 +171,8 @@ void UZMQManager::SendMetaData()
 
         TSharedPtr<FJsonObject> MetaDataSendJson = MakeShareable(new FJsonObject);
         MetaDataJson->SetObjectField("send", MetaDataSendJson);
+
+        send_buffer_size = 1;
 
         for (const TPair<AActor *, FAttributeContainer> &SendObject : SendObjects)
         {
@@ -202,6 +211,8 @@ void UZMQManager::SendMetaData()
 
         TSharedPtr<FJsonObject> MetaDataReceiveJson = MakeShareable(new FJsonObject);
         MetaDataJson->SetObjectField("receive", MetaDataReceiveJson);
+
+        receive_buffer_size = 1;
 
         for (const TPair<AActor *, FAttributeContainer> &ReceiveObjectRef : ReceiveObjectRefs)
         {
@@ -259,9 +270,7 @@ void UZMQManager::SendMetaData()
         TSharedRef<TJsonWriter<TCHAR>> Writer = TJsonWriterFactory<TCHAR>::Create(&MetaDataString);
         FJsonSerializer::Serialize(MetaDataJson.ToSharedRef(), Writer, true);
 
-        UE_LOG(LogZMQManager, Log, TEXT("%s"), *MetaDataString)
-
-        // Send JSON string over ZMQ
+		double *buffer = (double *)calloc(send_buffer_size + 2, sizeof(double));
         std::string meta_data_string;
         for (size_t i = 0; i < (MetaDataString.Len() + 127) / 128; i++) // Split string into multiple substrings with a length of 128 characters or less
         {
@@ -270,29 +279,41 @@ void UZMQManager::SendMetaData()
             const FString Substring = MetaDataString.Mid(StartIndex, SubstringLength);
             meta_data_string += StringCast<ANSICHAR>(*Substring).Get();
         }
-        zmq_send(socket_client, meta_data_string.c_str(), meta_data_string.size(), 0);
 
-        // Receive buffer sizes and send_data (if exists) over ZMQ
-		double *buffer = (double *)calloc(send_buffer_size + 2, sizeof(double));
-		zmq_recv(socket_client, buffer, (send_buffer_size + 2) * sizeof(double), 0);
+        UE_LOG(LogZMQManager, Log, TEXT("%s"), *MetaDataString)
+        
+		while (true)
+		{
+			// Send JSON string over ZMQ
+			zmq_send(socket_client, meta_data_string.c_str(), meta_data_string.size(), 0);
 
-        if (buffer == nullptr || (buffer + 1) == nullptr)
-        {
-            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: buffer is nullptr"), *SocketClientAddr)
-            return;
-        }
+			// Receive buffer sizes and send_data (if exists) over ZMQ
+			zmq_recv(socket_client, buffer, (send_buffer_size + 2) * sizeof(double), 0);
+			if (*buffer < 0)
+			{
+				free(buffer);
+				buffer = (double *)calloc(send_buffer_size + 2, sizeof(double));
+				UE_LOG(LogZMQManager, Warning, TEXT("The socket server at %s has been terminated, resend the message"), *SocketAddr);
+				zmq_disconnect(socket_client, socket_addr.c_str());
+                zmq_connect(socket_client, socket_addr.c_str());
+			}
+			else
+			{
+				break;
+			}
+		}
         
         size_t recv_buffer_size[2] = {(size_t)buffer[0], (size_t)buffer[1]};
         if (recv_buffer_size[0] != send_buffer_size || recv_buffer_size[1] != receive_buffer_size)
         {
-            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketClientAddr, recv_buffer_size[0], send_buffer_size, recv_buffer_size[1], receive_buffer_size)
-            zmq_disconnect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
+            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketAddr, recv_buffer_size[0], send_buffer_size, recv_buffer_size[1], receive_buffer_size)
+            zmq_disconnect(socket_client, socket_addr.c_str());
         }
         else
         {
             if (buffer[2] < 0.0)
             {
-                UE_LOG(LogZMQManager, Log, TEXT("Continue state on socket %s"), *SocketClientAddr)
+                UE_LOG(LogZMQManager, Log, TEXT("Continue state on socket %s"), *SocketAddr)
 
                 double *buffer_addr = buffer + 3;
 
@@ -340,8 +361,8 @@ void UZMQManager::SendMetaData()
                 }
             }
 
-            UE_LOG(LogZMQManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketClientAddr)
-            UE_LOG(LogZMQManager, Log, TEXT("Start communication on %s (send: %ld, receive: %ld)"), *SocketClientAddr, send_buffer_size, receive_buffer_size)
+            UE_LOG(LogZMQManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketAddr)
+            UE_LOG(LogZMQManager, Log, TEXT("Start communication on %s (send: %ld, receive: %ld)"), *SocketAddr, send_buffer_size, receive_buffer_size)
             send_buffer = (double *)calloc(send_buffer_size, sizeof(double));
             receive_buffer = (double *)calloc(receive_buffer_size, sizeof(double));
             IsEnable = true;
@@ -391,7 +412,11 @@ void UZMQManager::Tick()
         if (*receive_buffer < 0)
         {
             IsEnable = false;
-            UE_LOG(LogZMQManager, Warning, TEXT("Stop communication on %s"), *SocketClientAddr)
+            UE_LOG(LogZMQManager, Warning, TEXT("The socket server at %s has been terminated, resend the message"), *SocketAddr)
+            if (Task.IsValid())
+            {
+                Task->Wait();
+            }
             SendMetaData();
             return;
         }
@@ -431,10 +456,9 @@ void UZMQManager::Tick()
 
 void UZMQManager::Deinit()
 {
+    UE_LOG(LogZMQManager, Log, TEXT("Closing the socket client on %s"), *SocketAddr);
     if (IsEnable)
     {
-        UE_LOG(LogZMQManager, Log, TEXT("Deinitializing the socket connection..."))
-
         const std::string close_data = "{}";
 
         zmq_send(socket_client, close_data.c_str(), close_data.size(), 0);
@@ -442,7 +466,7 @@ void UZMQManager::Deinit()
         free(send_buffer);
         free(receive_buffer);
 
-        zmq_disconnect(socket_client, StringCast<ANSICHAR>(*SocketClientAddr).Get());
+        zmq_disconnect(socket_client, socket_addr.c_str());
     }
     else if (Task.IsValid())
     {

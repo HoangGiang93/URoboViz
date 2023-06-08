@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Subscriber/ObjectStateArraySubscriber.h"
+
 #include "Engine/StaticMeshActor.h"
 #include "ObjectController.h"
 #include "mujoco_msgs/ObjectStateArray.h"

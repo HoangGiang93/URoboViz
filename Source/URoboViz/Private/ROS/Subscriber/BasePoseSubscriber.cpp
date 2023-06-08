@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Subscriber/BasePoseSubscriber.h"
+
 #include "Controllers/BaseController.h"
 #include "nav_msgs/Odometry.h"
 

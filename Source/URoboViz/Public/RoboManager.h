@@ -34,9 +34,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	URobotController *GetController(const FString &ControllerName) const;
+	class URobotController *GetController(const FString &ControllerName) const;
 
-	USensor *GetSensor(const FString &SensorName) const;
+	class USensor *GetSensor(const FString &SensorName) const;
 
 	UObjectController *GetObjectController() const { return ObjectController; }
 
@@ -45,7 +45,7 @@ private:
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Robot Manager")
-	TMap<ASkeletalMeshActor *, FRoboManagerContainer> RobotManager;
+	TMap<class ASkeletalMeshActor *, FRoboManagerContainer> RobotManager;
 
 	UPROPERTY(EditAnywhere, Category = "ROS Manager")
 	FROSManagerContainer ROSManager;

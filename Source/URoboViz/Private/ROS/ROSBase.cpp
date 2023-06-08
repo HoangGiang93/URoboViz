@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/ROSBase.h"
+
 #include "RoboManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogROSBase, Log, All);

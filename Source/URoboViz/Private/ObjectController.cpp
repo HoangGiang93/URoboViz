@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ObjectController.h"
+
 #include "Animation/SkeletalMeshActor.h"
 #include "Async/Async.h"
 #include "Controllers/JointController.h"

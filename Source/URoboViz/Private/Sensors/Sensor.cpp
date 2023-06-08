@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "Sensors/Sensor.h"
+
 #include "Animation/SkeletalMeshActor.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSensor, Log, All);

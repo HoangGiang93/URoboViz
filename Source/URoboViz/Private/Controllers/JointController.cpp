@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "Controllers/JointController.h"
+
 #include "Animation/SkeletalMeshActor.h"
 #include "RoboAnim.h"
 

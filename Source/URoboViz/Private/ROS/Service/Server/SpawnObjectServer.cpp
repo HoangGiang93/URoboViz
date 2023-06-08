@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Service/Server/SpawnObjectServer.h"
+
 #include "Async/Async.h"
 #include "ObjectController.h"
 #include "RoboManager.h"

@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "Sensors/Lidar.h"
+
 #include "Animation/SkeletalMeshActor.h"
 #include "Conversions.h"
 #if WITH_EDITOR

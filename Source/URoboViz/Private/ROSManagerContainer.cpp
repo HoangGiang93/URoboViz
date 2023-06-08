@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROSManagerContainer.h"
+
 #include "ROS/Publisher/ROSPublisher.h"
 #include "ROS/Service/Client/ROSServiceClient.h"
 #include "ROS/Service/Server/ROSServiceServer.h"

@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
 #include "ROS/Publisher/LidarPublisher.h"
+
 #include "Sensors/Lidar.h"
 #include "sensor_msgs/LaserScan.h"
 

@@ -48,7 +48,7 @@ public:
 	TMap<AActor *, FAttributeContainer> ReceiveObjects;
 
 public:
-	UZMQManager();	
+	UZMQManager();
 
 private:
 	TArray<TPair<AActor *, EAttribute>> SendDataArray;

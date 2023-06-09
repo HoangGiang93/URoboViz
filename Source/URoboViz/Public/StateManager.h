@@ -26,7 +26,7 @@ struct FAttributeContainer
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<EAttribute> Attributes;
+	TSet<EAttribute> Attributes;
 };
 
 UCLASS(Blueprintable, DefaultToInstanced, collapsecategories, hidecategories = Object, editinlinenew)

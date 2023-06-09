@@ -1,6 +1,6 @@
 // Copyright (c) 2023, Hoang Giang Nguyen - Institute for Artificial Intelligence, University Bremen
 
-#include "ZMQManager.h"
+#include "StateManager.h"
 
 #include <chrono>
 
@@ -12,15 +12,15 @@
 #include "RoboManager.h"
 #include "ZMQLibrary/zmq.hpp"
 
-DEFINE_LOG_CATEGORY_STATIC(LogZMQManager, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogStateManager, Log, All);
 
-UZMQManager::UZMQManager()
+UStateManager::UStateManager()
 {
     Host = TEXT("tcp://127.0.0.1");
     Port = 7500;
 }
 
-void UZMQManager::Init()
+void UStateManager::Init()
 {
     if (SendObjects.Num() > 0)
     {
@@ -39,14 +39,14 @@ void UZMQManager::Init()
     }
     else
     {
-        UE_LOG(LogZMQManager, Warning, TEXT("Outer of %s is not ARoboManager"), *GetName())
+        UE_LOG(LogStateManager, Warning, TEXT("Outer of %s is not ARoboManager"), *GetName())
         return;
     }
 
     UWorld *World = GetWorld();
     if (World == nullptr)
     {
-        UE_LOG(LogZMQManager, Error, TEXT("World of %s is nullptr"), *GetName())
+        UE_LOG(LogStateManager, Error, TEXT("World of %s is nullptr"), *GetName())
         return;
     }
 
@@ -54,26 +54,26 @@ void UZMQManager::Init()
     {
         if (ReceiveObject.Key == nullptr)
         {
-            UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in ReceiveObjects."))
+            UE_LOG(LogStateManager, Warning, TEXT("Ignore None Object in ReceiveObjects."))
             continue;
         }
 
         AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(ReceiveObject.Key);
         if (StaticMeshActor == nullptr)
         {
-            UE_LOG(LogZMQManager, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjects."), *StaticMeshActor->GetName())
+            UE_LOG(LogStateManager, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjects."), *StaticMeshActor->GetName())
             continue;
         }
 
         UStaticMeshComponent *StaticMeshComponent = StaticMeshActor->GetStaticMeshComponent();
         if (StaticMeshComponent == nullptr || StaticMeshComponent->GetStaticMesh() == nullptr)
         {
-            UE_LOG(LogZMQManager, Warning, TEXT("StaticMeshActor %s in ReceiveObjects has None StaticMeshComponent."), *ReceiveObject.Key->GetName())
+            UE_LOG(LogStateManager, Warning, TEXT("StaticMeshActor %s in ReceiveObjects has None StaticMeshComponent."), *ReceiveObject.Key->GetName())
             continue;
         }
         if (!StaticMeshComponent->IsSimulatingPhysics())
         {
-            UE_LOG(LogZMQManager, Warning, TEXT("StaticMeshActor %s has disabled physics, enabling physics."), *ReceiveObject.Key->GetName())
+            UE_LOG(LogStateManager, Warning, TEXT("StaticMeshActor %s has disabled physics, enabling physics."), *ReceiveObject.Key->GetName())
             StaticMeshComponent->SetSimulatePhysics(true);
         }
 
@@ -90,7 +90,7 @@ void UZMQManager::Init()
         AActor *ReceiveObjectRef = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FTransform(), SpawnParams);
         if (ReceiveObjectRef == nullptr)
         {
-            UE_LOG(LogZMQManager, Error, TEXT("Failed to spawn StaticMeshActor %s"), *SpawnParams.Name.ToString())
+            UE_LOG(LogStateManager, Error, TEXT("Failed to spawn StaticMeshActor %s"), *SpawnParams.Name.ToString())
             continue;
         }
 
@@ -138,7 +138,7 @@ void UZMQManager::Init()
 
     if (SendObjects.Num() > 0 || ReceiveObjectRefs.Num() > 0)
     {
-        UE_LOG(LogZMQManager, Log, TEXT("Initializing the socket connection..."))
+        UE_LOG(LogStateManager, Log, TEXT("Initializing the socket connection..."))
 
         context = zmq_ctx_new();
 
@@ -150,7 +150,7 @@ void UZMQManager::Init()
     }
 }
 
-void UZMQManager::SendMetaData()
+void UStateManager::SendMetaData()
 {
     zmq_disconnect(socket_client, socket_addr.c_str());
     zmq_connect(socket_client, socket_addr.c_str());
@@ -179,7 +179,7 @@ void UZMQManager::SendMetaData()
         {
             if (SendObject.Key == nullptr)
             {
-                UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in SendObjects"))
+                UE_LOG(LogStateManager, Warning, TEXT("Ignore None Object in SendObjects"))
                 continue;
             }
 
@@ -219,19 +219,19 @@ void UZMQManager::SendMetaData()
         {
             if (ReceiveObjectRef.Key == nullptr)
             {
-                UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in ReceiveObjectRefs"))
+                UE_LOG(LogStateManager, Warning, TEXT("Ignore None Object in ReceiveObjectRefs"))
                 continue;
             }
 
             AStaticMeshActor *StaticMeshActor = Cast<AStaticMeshActor>(ReceiveObjectRef.Key);
             if (StaticMeshActor == nullptr)
             {
-                UE_LOG(LogZMQManager, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjectRefs"), *ReceiveObjectRef.Key->GetName())
+                UE_LOG(LogStateManager, Warning, TEXT("Ignore Non-StaticMeshActor %s in ReceiveObjectRefs"), *ReceiveObjectRef.Key->GetName())
                 continue;
             }
             else if (StaticMeshActor->GetStaticMeshComponent() == nullptr)
             {
-                UE_LOG(LogZMQManager, Warning, TEXT("StaticMeshActor %s in ReceiveObjectRefs has None StaticMeshComponent"), *ReceiveObjectRef.Key->GetName())
+                UE_LOG(LogStateManager, Warning, TEXT("StaticMeshActor %s in ReceiveObjectRefs has None StaticMeshComponent"), *ReceiveObjectRef.Key->GetName())
                 continue;
             }
 
@@ -281,7 +281,7 @@ void UZMQManager::SendMetaData()
             meta_data_string += StringCast<ANSICHAR>(*Substring).Get();
         }
 
-        UE_LOG(LogZMQManager, Log, TEXT("%s"), *MetaDataString)
+        UE_LOG(LogStateManager, Log, TEXT("%s"), *MetaDataString)
         
 		while (true)
 		{
@@ -294,7 +294,7 @@ void UZMQManager::SendMetaData()
 			{
 				free(buffer);
 				buffer = (double *)calloc(send_buffer_size + 2, sizeof(double));
-				UE_LOG(LogZMQManager, Warning, TEXT("The socket server at %s has been terminated, resend the message"), *SocketAddr);
+				UE_LOG(LogStateManager, Warning, TEXT("The socket server at %s has been terminated, resend the message"), *SocketAddr);
 				zmq_disconnect(socket_client, socket_addr.c_str());
                 zmq_connect(socket_client, socket_addr.c_str());
 			}
@@ -307,14 +307,14 @@ void UZMQManager::SendMetaData()
         size_t recv_buffer_size[2] = {(size_t)buffer[0], (size_t)buffer[1]};
         if (recv_buffer_size[0] != send_buffer_size || recv_buffer_size[1] != receive_buffer_size)
         {
-            UE_LOG(LogZMQManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketAddr, recv_buffer_size[0], send_buffer_size, recv_buffer_size[1], receive_buffer_size)
+            UE_LOG(LogStateManager, Error, TEXT("Failed to initialize the socket at %s: send_buffer_size(server = %ld != client = %ld), receive_buffer_size(server = %ld != client = %ld)."), *SocketAddr, recv_buffer_size[0], send_buffer_size, recv_buffer_size[1], receive_buffer_size)
             zmq_disconnect(socket_client, socket_addr.c_str());
         }
         else
         {
             if (buffer[2] < 0.0)
             {
-                UE_LOG(LogZMQManager, Log, TEXT("Continue state on socket %s"), *SocketAddr)
+                UE_LOG(LogStateManager, Log, TEXT("Continue state on socket %s"), *SocketAddr)
 
                 double *buffer_addr = buffer + 3;
 
@@ -322,7 +322,7 @@ void UZMQManager::SendMetaData()
                 {
                     if (SendObject.Key == nullptr)
                     {
-                        UE_LOG(LogZMQManager, Warning, TEXT("Ignore None Object in SendObjects"))
+                        UE_LOG(LogStateManager, Warning, TEXT("Ignore None Object in SendObjects"))
                         continue;
                     }
 
@@ -362,8 +362,8 @@ void UZMQManager::SendMetaData()
                 }
             }
 
-            UE_LOG(LogZMQManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketAddr)
-            UE_LOG(LogZMQManager, Log, TEXT("Start communication on %s (send: %ld, receive: %ld)"), *SocketAddr, send_buffer_size, receive_buffer_size)
+            UE_LOG(LogStateManager, Log, TEXT("Initialized the socket at %s successfully."), *SocketAddr)
+            UE_LOG(LogStateManager, Log, TEXT("Start communication on %s (send: %ld, receive: %ld)"), *SocketAddr, send_buffer_size, receive_buffer_size)
             send_buffer = (double *)calloc(send_buffer_size, sizeof(double));
             receive_buffer = (double *)calloc(receive_buffer_size, sizeof(double));
             IsEnable = true;
@@ -371,7 +371,7 @@ void UZMQManager::SendMetaData()
                                                           TStatId(), nullptr, ENamedThreads::AnyThread);
 }
 
-void UZMQManager::Tick()
+void UStateManager::Tick()
 {
     if (IsEnable)
     {
@@ -413,7 +413,7 @@ void UZMQManager::Tick()
         if (*receive_buffer < 0)
         {
             IsEnable = false;
-            UE_LOG(LogZMQManager, Warning, TEXT("The socket server at %s has been terminated, resend the message"), *SocketAddr)
+            UE_LOG(LogStateManager, Warning, TEXT("The socket server at %s has been terminated, resend the message"), *SocketAddr)
             if (Task.IsValid())
             {
                 Task->Wait();
@@ -455,9 +455,9 @@ void UZMQManager::Tick()
     }
 }
 
-void UZMQManager::Deinit()
+void UStateManager::Deinit()
 {
-    UE_LOG(LogZMQManager, Log, TEXT("Closing the socket client on %s"), *SocketAddr);
+    UE_LOG(LogStateManager, Log, TEXT("Closing the socket client on %s"), *SocketAddr);
     if (IsEnable)
     {
         const std::string close_data = "{}";

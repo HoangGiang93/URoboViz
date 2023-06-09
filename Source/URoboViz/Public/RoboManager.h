@@ -11,7 +11,7 @@
 
 class UObjectController;
 
-class UZMQManager;
+class UStateManager;
 
 UCLASS()
 class UROBOVIZ_API ARoboManager : public AActor
@@ -51,7 +51,7 @@ private:
 	FROSManagerContainer ROSManager;
 
 	UPROPERTY(VisibleAnywhere, Category = "ZMQ Manager")
-	UZMQManager *ZMQManager;
+	UStateManager *StateManager;
 
 	UPROPERTY(VisibleAnywhere, Category = "Object Controller")
 	UObjectController *ObjectController;

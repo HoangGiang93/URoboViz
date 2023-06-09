@@ -6,7 +6,7 @@
 #include <string>
 
 // clang-format off
-#include "ZMQManager.generated.h"
+#include "StateManager.generated.h"
 // clang-format on
 
 class UObjectController;
@@ -30,7 +30,7 @@ public:
 };
 
 UCLASS(Blueprintable, DefaultToInstanced, collapsecategories, hidecategories = Object, editinlinenew)
-class UROBOVIZ_API UZMQManager : public UObject
+class UROBOVIZ_API UStateManager : public UObject
 {
 	GENERATED_BODY()
 
@@ -48,7 +48,7 @@ public:
 	TMap<AActor *, FAttributeContainer> ReceiveObjects;
 
 public:
-	UZMQManager();
+	UStateManager();
 
 private:
 	TArray<TPair<AActor *, EAttribute>> SendDataArray;

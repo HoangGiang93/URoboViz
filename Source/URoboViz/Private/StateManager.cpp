@@ -164,7 +164,8 @@ void UStateManager::SendMetaData()
 
             {EAttribute::Position, {0.0, 0.0, 0.0}},
             {EAttribute::Quaternion, {1.0, 0.0, 0.0, 0.0}},
-            {EAttribute::Joint1D, {0.0}}};
+            {EAttribute::JointPosition, {0.0}},
+            {EAttribute::JointQuaternion, {1.0, 0.0, 0.0, 0.0}},};
 
         TSharedPtr<FJsonObject> MetaDataJson = MakeShareable(new FJsonObject);
         MetaDataJson->SetStringField("time", "microseconds");
@@ -196,8 +197,12 @@ void UStateManager::SendMetaData()
                     AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("quaternion"))));
                     break;
 
-                case EAttribute::Joint1D:
-                    AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("joint_1D"))));
+                case EAttribute::JointPosition:
+                    AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("joint_position"))));
+                    break;
+
+                case EAttribute::JointQuaternion:
+                    AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("joint_quaternion"))));
                     break;
 
                 default:
@@ -250,8 +255,8 @@ void UStateManager::SendMetaData()
                     AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("quaternion"))));
                     break;
 
-                case EAttribute::Joint1D:
-                    AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("joint_1D"))));
+                case EAttribute::JointPosition:
+                    AttributeJsonArray.Add(MakeShareable(new FJsonValueString(TEXT("joint_position"))));
                     break;
 
                 default:
@@ -352,8 +357,15 @@ void UStateManager::SendMetaData()
                             break;
                         }
 
-                        case EAttribute::Joint1D:
+                        case EAttribute::JointPosition:
+                        {
                             break;
+                        }
+
+                        case EAttribute::JointQuaternion:
+                        {
+                            break;
+                        }
 
                         default:
                             break;

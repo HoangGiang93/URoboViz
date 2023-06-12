@@ -16,7 +16,8 @@ enum class EAttribute : uint8
 {
 	Position,
 	Quaternion,
-	Joint1D
+	JointPosition,
+	JointQuaternion
 };
 
 USTRUCT(Blueprintable)
